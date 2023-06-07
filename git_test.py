@@ -2,7 +2,10 @@ from bs4 import BeautifulSoup as bs
 import requests
 import pandas as pd
 import regex as re
+import os
 
+
+os.chdir("C:/Users/lukas/Desktop/bachelor/bachelor")
 pattern=re.compile("[A-Z]{1}[a-z]+.[A-Z]{1}[a-z]+.[A-Z]*[a-z]+")
 salary_pattern=re.compile("^\d+,\d+,*\d*")
 delete_list=['Michael Siewenie for', 'Team Payrolls','Patricia Bender',"Los Angeles Lakers","New Jersey Nets","Philadelphia 76ers","New York Knicks","Boston Celtics","Seattle Supersonics","Los Angeles Clippers","Detroit Pistons","Chicago Bulls","Washington Bullets", "Goldon State Warriors", "Houston Rockets", "Phoenix Suns","San Antonio Spurs", "Dallas Mavericks", "Sacramento Kings","Cleveland Cavaliers", "Golden State Warriors", "Portland Trailblazers","Indiana Pacers", "Atlanta Hawks", "Milwaukee Bucks","Denver Nuggets","Utah Jazz"]
@@ -12,8 +15,23 @@ nba_season_85_86=requests.get(nba_season_85_86_url)
 
 
 nba_season_85_86=nba_season_85_86.text
-print(nba_season_85_86)
+#print(nba_season_85_86)
 
+with open('season85.txt', 'w') as f:
+    f.write(nba_season_85_86)
+    
+   
+lines=f.readlines() 
+print(lines)
+index=0
+with open('season85.txt', 'w') as fw:
+    for line in lines:
+       
+        # we want to remove 5th line
+        if index <=5:
+            fw.write(line)
+        index+=1
+    
 
 def strip_data(text):
     text.replace(".","")
@@ -39,7 +57,7 @@ results=pattern.findall(nba_season_85_86)
 results=clean_data(results)
 
 salaries=salary_pattern.findall(nba_season_85_86)
-print(salaries)
+#print(salaries)
 
 
 
