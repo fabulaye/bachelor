@@ -3,8 +3,10 @@ import requests
 import pandas as pd
 import regex as re
 
+pattern=re.compile("[A-Z][a-z]+")
+
 team_list=["Los Angeles Lakers","New Jersey Nets","Philadelphia 76ers","New York Knicks","Boston Celtics","Seattle Supersonics","Los Angeles Clippers","Detroit Pistons","Chicago Bulls","Washington Bullets", "Goldon State Warriors", "Houston Rockets","Houston Rockets", "Phoenix Suns","San Antonio Spurs", "Dallas Mavericks", "Sacramento Kings","Cleveland Cavaliers", "Portland Trailblaizers","Indiana Pacers", "Atlanta Hawks", "Milwaukee Bucks","Denver Nuggets","Utah Jazz"]
-team_list=team_list.split()
+#team_list=team_list.split()
 nba_season_85_86_url="https://www.eskimo.com/~pbender/misc/salaries86.txt"
 nba_season_85_86=requests.get(nba_season_85_86_url)
 
@@ -16,14 +18,18 @@ def strip_data(text):
     text.replace("Total","")
     text.replace("$","")
     text.replace(",","")
-    for word in team_list:
-        text.replace(word,"")
+    #for team in team_list:
+        #text.replace(team,"")
+        #print(team)
     return text
 
 nba_season_85_86=strip_data(nba_season_85_86)
 #nba_season_85_86_split=nba_season_85_86.split("\n")
-print(nba_season_85_86) #tested den bumms
+#print(nba_season_85_86) #tested den bumms
 
+results=pattern.findall(nba_season_85_86)
+
+print(results)
 
 #test=re.search("[A-Z]",nba_season_85_86)
 
@@ -66,6 +72,7 @@ def extract_names(text):
                 player_name=[]
             else:     
                 player_name=[]  
+        #print(word)        
     return player_list         
 
 
