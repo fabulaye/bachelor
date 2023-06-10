@@ -10,9 +10,41 @@ string_pattern=re.compile("[A-Z]{1}[\.a-z']*.[A-Z,1-9]{1}[\.a-z',1-9]*.[A-Z]*[.a
 salary_pattern=re.compile("\d+,\d+,*\d*")
 delete_list=['Michael Siewenie for', 'Team Payrolls','Patricia Bender']
 #team_list=team_list.split()
-nba_season_85_86_url="https://www.eskimo.com/~pbender/misc/salaries86.txt"
+nba_season_85_url="https://www.eskimo.com/~pbender/misc/salaries86.txt"
+nba_season_86_url="https://www.eskimo.com/~pbender/misc/salaries87.txt"
+nba_season_87_url="https://www.eskimo.com/~pbender/misc/salaries88.txt"
+nba_season_88_url="https://www.eskimo.com/~pbender/misc/salaries89.txt"
+nba_season_89_url="https://www.eskimo.com/~pbender/misc/salaries90.txt"
+nba_season_90_url="https://www.eskimo.com/~pbender/misc/salaries91.txt"
+nba_season_91_url="https://www.eskimo.com/~pbender/misc/salaries92.txt"
+nba_season_92_url="https://www.eskimo.com/~pbender/misc/salaries93.txt"
+nba_season_93_url="https://www.eskimo.com/~pbender/misc/salaries94.txt"
+nba_season_94_url="https://www.eskimo.com/~pbender/misc/salaries95.txt"
+nba_season_95_url="https://www.eskimo.com/~pbender/misc/salaries96.txt"
+nba_season_96_url="https://www.eskimo.com/~pbender/misc/salaries97.txt"
+nba_season_97_url="https://www.eskimo.com/~pbender/misc/salaries98.txt"
+nba_season_98_url="https://www.eskimo.com/~pbender/misc/salaries99.txt"
+nba_season_99_url="https://www.eskimo.com/~pbender/misc/salaries00.txt"
+nba_season_90_url="https://www.eskimo.com/~pbender/misc/salaries02.txt"
+nba_season_01_url="https://www.eskimo.com/~pbender/misc/salaries03.txt"
+nba_season_02_url="https://www.eskimo.com/~pbender/misc/salaries01.txt"
+nba_season_03_url="https://www.eskimo.com/~pbender/misc/salaries04.txt"
+nba_season_04_url="https://www.eskimo.com/~pbender/misc/salaries05.txt"
+nba_season_05_url="https://www.eskimo.com/~pbender/misc/salaries06.txt"
+nba_season_06_url="https://www.eskimo.com/~pbender/misc/salaries07.txt"
+nba_season_07_url="https://www.eskimo.com/~pbender/misc/salaries08.txt"
+nba_season_08_url="https://www.eskimo.com/~pbender/misc/salaries09.txt"
+nba_season_09_url="https://www.eskimo.com/~pbender/misc/salaries10.txt"
+nba_season_10_url="https://www.eskimo.com/~pbender/misc/salaries11.txt"
+nba_season_11_url="https://www.eskimo.com/~pbender/misc/salaries12.txt"
+nba_season_12_url="https://www.eskimo.com/~pbender/misc/salaries13.txt"
+nba_season_13_url="https://www.eskimo.com/~pbender/misc/salaries14.txt"
+nba_season_14_url="https://www.eskimo.com/~pbender/misc/salaries15.txt"
+nba_season_15_url="https://www.eskimo.com/~pbender/misc/salaries16.txt"
+
 nba_season_85_86=requests.get(nba_season_85_86_url)
 
+url_list=[nba_season_85_url,]
 
 
 nba_season_85_86=nba_season_85_86.text
@@ -83,16 +115,16 @@ results=strip_whitespace(results)
 
 
 class player():
-    def __init__(self,name,salary_dic) -> None:
-        id=id
+    def __init__(self,id,name) -> None:
+        self.id=id
         self.name=name
-        self.salary_dic=salary_dic
+        self.salary_dic={}
 
 class season():
-    def __init__(self) -> None:
+    def __init__(self,id,year,dict) -> None:
         self.id=id
         self.year=year
-        self.salary_dict=dictionary
+        self.salary_dict=dict
 
 salary_dict={}#player als key dictionary als value, dic enthält saisons als key und gehalt als value
 
@@ -136,5 +168,35 @@ nba_season_cleaned=extract_names(nba_season_85_86)
 #print(nba_season_cleaned)
 season_85_dict=dict(zip(results,salaries))
 
-print(season_85_dict["Larry Bird"])
-nba_dict={85:season_85_dict}
+
+list_of_dicts=[season_85_dict,]
+season_instances_dict={}
+global_season_id=0
+
+def create_season_objects(list_of_dicts):
+    global global_season_id
+    start_year=1985
+    for dict in list_of_dicts:
+        season_instances_dict[start_year+global_season_id]=season(global_season_id,start_year+global_season_id,dict)
+        global_season_id+=1
+
+create_season_objects(list_of_dicts)
+
+player_instances_dict={}
+global_player_id=0
+
+def create_player_instances(list_of_season_objects):
+    global global_player_id
+    for season_object in list_of_season_objects:
+        for player_name in season_object.dict:
+            player_instances_dict[player_name]=player(global_player_id,player_name)
+            global_player_id+=1
+
+list_of_season_objects=[season_85]
+
+create_player_instances(list_of_season_objects)
+
+print(player_instances_dict["Larry Bird"].id)
+
+def assign_salaries():
+    for 
