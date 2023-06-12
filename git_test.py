@@ -25,7 +25,7 @@ nba_season_96_url="https://www.eskimo.com/~pbender/misc/salaries97.txt"
 nba_season_97_url="https://www.eskimo.com/~pbender/misc/salaries98.txt"
 nba_season_98_url="https://www.eskimo.com/~pbender/misc/salaries99.txt"
 nba_season_99_url="https://www.eskimo.com/~pbender/misc/salaries00.txt"
-nba_season_90_url="https://www.eskimo.com/~pbender/misc/salaries02.txt"
+nba_season_00_url="https://www.eskimo.com/~pbender/misc/salaries02.txt"
 nba_season_01_url="https://www.eskimo.com/~pbender/misc/salaries03.txt"
 nba_season_02_url="https://www.eskimo.com/~pbender/misc/salaries01.txt"
 nba_season_03_url="https://www.eskimo.com/~pbender/misc/salaries04.txt"
@@ -42,10 +42,24 @@ nba_season_13_url="https://www.eskimo.com/~pbender/misc/salaries14.txt"
 nba_season_14_url="https://www.eskimo.com/~pbender/misc/salaries15.txt"
 nba_season_15_url="https://www.eskimo.com/~pbender/misc/salaries16.txt"
 
-nba_season_85_86=requests.get(nba_season_85_86_url)
+nba_season_85_86=requests.get(nba_season_85_url)
+nba_season_86=requests.get(nba_season_86_url)
 
-url_list=[nba_season_85_url,]
+url_list=[nba_season_85_url,nba_season_86_url,nba_season_87_url,nba_season_88_url,nba_season_89_url,nba_season_90_url,nba_season_91_url,nba_season_92_url,nba_season_93_url,nba_season_94_url,nba_season_95_url,nba_season_96_url,nba_season_97_url,nba_season_98_url,nba_season_99_url,nba_season_00_url,nba_season_01_url,nba_season_02_url,nba_season_03_url,nba_season_04_url,nba_season_05_url,nba_season_06_url,nba_season_07_url,nba_season_08_url,nba_season_09_url,nba_season_10_url,nba_season_11_url,nba_season_12_url,nba_season_13_url,nba_season_14_url,nba_season_15_url,]
 
+
+text_dict={}
+
+def get_text():
+    starting_year=1985
+    for url in url_list:
+        text_dict[starting_year]=requests.get(url).text
+        starting_year+=1
+        if starting_year==1991:
+            break
+
+
+get_text()
 
 nba_season_85_86=nba_season_85_86.text
 
@@ -68,50 +82,31 @@ with open('season85.txt', 'w') as fw:
         index+=1
     
 
-def strip_data(text):
-    for string in text:#input is liste
-         for character in string:
-             print(character)
-             if character==".":
-                 del character
-         string.strip()
-         
-    return text
+def delete_text():
+    for key,text in text_dict.items():
+        titel=str(key)+".txt"
+        with open(titel, 'w') as f:
+            f.write(text)
 
-with open("season85.txt","r") as f:
-    nba_season_85_86=f.readlines()
-
-
-#nba_season_85_86=strip_data(nba_season_85_86)
-nba_season_85_86=str(nba_season_85_86)
-
-
-nba_season_85_86=nba_season_85_86.replace(".","")
-
-
-
-
-
-def clean_data(text):
-    for item in text.split():
-        if item in delete_list:
-            text.remove(item)
-    return text 
+        with open(titel, "r") as f:
+            lines = f.readlines()
+        index=0
+        with open(titel, 'w') as fw:
+            for line in lines:
+            
+                # we want to remove 5th line
+                if index >=70:
+                    fw.write(line)
+                index+=1
+        with open("season85.txt","r") as f:
+            text_dict[key]=f.readlines()        
+      
+delete_text()
 
 
 
-results=string_pattern.findall(nba_season_85_86)
-results.pop()
 
 
-def strip_whitespace(list):
-    new_list=[]
-    for string in list:
-        string=string[:-2]
-        new_list.append(string)
-    return new_list    
-
-results=strip_whitespace(results)
 
 
 class player():
@@ -131,19 +126,34 @@ salary_dict={}#player als key dictionary als value, dic enthält saisons als key
 spieler_liste=[]
 
 def int_data(text):
+    text=str(text)
     int_data=[]
     for word in text.split():
         try: 
             int_data.append(int(word))
+            print("success")
         except:
             int_data.append(word)
-    return int_data        
+    return int_data    
+    
+def platzhalter():
+    for key,liste in text_dict.items():
+        text_dict[key]=int_data(text_dict[key])
+        
 
+platzhalter()        
+print(text_dict[1989])
+#salary_test=salary_pattern.findall()
+#print(salary_test)
 
+def strip_whitespace(list): #für die Namen beim Regex
+    new_list=[]
+    for string in list:
+        string=string[:-2]
+        new_list.append(string)
+    return new_list    
 
-salaries=salary_pattern.findall(nba_season_85_86)
-
-
+#results=strip_whitespace(results)
 
 
 def extract_names(text):
@@ -166,7 +176,8 @@ def extract_names(text):
 
 nba_season_cleaned=extract_names(nba_season_85_86)
 #print(nba_season_cleaned)
-season_85_dict=dict(zip(results,salaries))
+#season_85_dict=dict(zip(results,salaries))
+
 
 
 list_of_dicts=[season_85_dict,]
@@ -192,11 +203,8 @@ def create_player_instances(list_of_season_objects):
             player_instances_dict[player_name]=player(global_player_id,player_name)
             global_player_id+=1
 
-list_of_season_objects=[season_85]
+list_of_season_objects=[] #das dict benutzen oder ne neue Liste erstellen?
 
 create_player_instances(list_of_season_objects)
 
-print(player_instances_dict["Larry Bird"].id)
 
-def assign_salaries():
-    for 
