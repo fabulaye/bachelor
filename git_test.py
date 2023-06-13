@@ -6,7 +6,7 @@ import os
 
 "Los Angeles Lakers","New Jersey Nets","Philadelphia 76ers","New York Knicks","Boston Celtics","Seattle Supersonics","Los Angeles Clippers","Detroit Pistons","Chicago Bulls","Washington Bullets", "Goldon State Warriors", "Houston Rockets", "Phoenix Suns","San Antonio Spurs", "Dallas Mavericks", "Sacramento Kings","Cleveland Cavaliers", "Golden State Warriors", "Portland Trailblazers","Indiana Pacers", "Atlanta Hawks", "Milwaukee Bucks","Denver Nuggets","Utah Jazz"
 os.chdir("C:/Users/lukas/Desktop/bachelor/bachelor")
-string_pattern=re.compile("[A-Z]{1}[\.a-z']*.[A-Z,1-9]{1}[\.a-z',1-9]*.[A-Z]*[.a-z']*.[A-Z]*[a-z]*")
+string_pattern=re.compile("[A-Z]{1}[\.a-z']*.[A-Z,1-9]{1}[\.a-z',1-9]*.[A-Z]*[a-z']*.[A-Z]*[a-z]*")
 salary_pattern=re.compile("\d+,\d+,*\d*")
 delete_list=['Michael Siewenie for', 'Team Payrolls','Patricia Bender']
 #team_list=team_list.split()
@@ -102,12 +102,24 @@ def delete_text():
             text_dict[key]=f.readlines()        
       
 delete_text()
+#print(text_dict[1985])
 
+def transform_list_into_string(list):
+    text="".join(list)
+    return text
 
+player_test_list=[]
+salary_test_list=[]
 
+def search_for_pattern():
+    for key,list in text_dict.items():
+        for string in list:
+            salary_test_list.append(salary_pattern.findall(string))
+            player_test_list.append(string_pattern.findall(string))
 
-
-
+search_for_pattern()
+print(len(player_test_list))
+print(len(salary_test_list))
 
 class player():
     def __init__(self,id,name) -> None:
@@ -126,25 +138,17 @@ salary_dict={}#player als key dictionary als value, dic enthält saisons als key
 spieler_liste=[]
 
 def int_data(text):
-    text=str(text)
+    #text=transform_list_into_string(text) #input ist ne liste
     int_data=[]
     for word in text.split():
         try: 
             int_data.append(int(word))
-            print("success")
         except:
             int_data.append(word)
     return int_data    
     
-def platzhalter():
-    for key,liste in text_dict.items():
-        text_dict[key]=int_data(text_dict[key])
-        
 
-platzhalter()        
-print(text_dict[1989])
-#salary_test=salary_pattern.findall()
-#print(salary_test)
+    
 
 def strip_whitespace(list): #für die Namen beim Regex
     new_list=[]
@@ -158,6 +162,7 @@ def strip_whitespace(list): #für die Namen beim Regex
 
 def extract_names(text):
     data=int_data(text)
+    
     counter=0
     player_list=[]
     player_name=[]
