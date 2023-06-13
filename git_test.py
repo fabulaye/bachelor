@@ -6,8 +6,9 @@ import os
 
 "Los Angeles Lakers","New Jersey Nets","Philadelphia 76ers","New York Knicks","Boston Celtics","Seattle Supersonics","Los Angeles Clippers","Detroit Pistons","Chicago Bulls","Washington Bullets", "Goldon State Warriors", "Houston Rockets", "Phoenix Suns","San Antonio Spurs", "Dallas Mavericks", "Sacramento Kings","Cleveland Cavaliers", "Golden State Warriors", "Portland Trailblazers","Indiana Pacers", "Atlanta Hawks", "Milwaukee Bucks","Denver Nuggets","Utah Jazz"
 os.chdir("C:/Users/lukas/Desktop/bachelor/bachelor")
-string_pattern=re.compile("[A-Z]{1}[\.a-z']*.[A-Z,1-9]{1}[\.a-z',1-9]*.[A-Z]*[a-z']*.[A-Z]*[a-z]*")
+string_pattern=re.compile("[A-Z]{1}[\.a-z']*\s[A-Z,1-9]{1}[\.a-z',1-9]*(\s[A-Z]*[a-z',1-9]*)*")
 salary_pattern=re.compile("\d+,\d+,*\d*")
+atlanta_pattern=re.compile("Atlanta Hawks.*Total")
 delete_list=['Michael Siewenie for', 'Team Payrolls','Patricia Bender']
 #team_list=team_list.split()
 nba_season_85_url="https://www.eskimo.com/~pbender/misc/salaries86.txt"
@@ -92,12 +93,16 @@ def delete_text():
             lines = f.readlines()
         index=0
         with open(titel, 'w') as fw:
+            found=False
             for line in lines:
-            
+                #string=fw.readline()
                 # we want to remove 5th line
-                if index >=70:
+                if atlanta_pattern.findall(line) != []:
+                    
+                    found=True
+                if found==True:
                     fw.write(line)
-                index+=1
+                #index+=1
         with open("season85.txt","r") as f:
             text_dict[key]=f.readlines()        
       
@@ -114,12 +119,14 @@ salary_test_list=[]
 def search_for_pattern():
     for key,list in text_dict.items():
         for string in list:
-            salary_test_list.append(salary_pattern.findall(string))
-            player_test_list.append(string_pattern.findall(string))
+            if salary_pattern.findall(string)!=[]:
+                salary_test_list.append(salary_pattern.findall(string))
+            if string_pattern.findall(string)!=[]:
+                player_test_list.append(string_pattern.findall(string))
 
 search_for_pattern()
-print(len(player_test_list))
-print(len(salary_test_list))
+print(player_test_list)
+
 
 class player():
     def __init__(self,id,name) -> None:
@@ -185,7 +192,7 @@ nba_season_cleaned=extract_names(nba_season_85_86)
 
 
 
-list_of_dicts=[season_85_dict,]
+#list_of_dicts=[season_85_dict,]
 season_instances_dict={}
 global_season_id=0
 
