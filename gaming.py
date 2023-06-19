@@ -19,6 +19,7 @@ class company():
           self.active=True
           self.link=""
           self.time=time
+          self.html=""
     def update_time(self):
           self.time=time.time() 
 
@@ -92,6 +93,21 @@ update_company_dict_time()
 company_dataset["Time"]=company_dict_time.values()   
 os.chdir("C:/Users/lukas/Desktop/bachelor/data")
 company_dataset.to_excel("test.xlsx")  
+
+
+
+def read_html_files():
+      for company_name,company_object in company_dict.items():
+            with open(company_name+".html") as f:
+                  company_object.html=f.readlines()
+
+read_html_files() #hier bin ich
+
+def search_for_annual_account(text):
+      list=datum_regex.findall(text)
+      print(list)
+
+search_for_annual_account()
 #print(request_text)
 
 #pattern=re.compile("\d{2}\.\d{2}\.\d{4}")
