@@ -25,10 +25,15 @@ company_dict_time={}
 def read_in_json_datasets():
       global handelsregister_dict,gaming_company_dict
       os.chdir("C:/Users/lukas/Desktop/bachelor/data")
-      handelsregister_dict=json.loads("handelsregister_dict.json")
-      gaming_company_dict=json.loads("gaming_company_dict.json")
+      #handelsregister_dict=json.loads("handelsregister_dict.json")
+      with open("gaming_company_dict.json","r") as f:
+            data=f.readlines()[0]
+            print(data)
+            print(type(data))
+      gaming_company_dict=json.loads(data)
+      print(gaming_company_dict)
 
-read_in_json_datasets()
+#read_in_json_datasets()
 
 
 def find_all_companies():
@@ -77,7 +82,9 @@ company_dataset=update_company_data_from_excel() #brauchen wir nicht mehr
 def create_json_from_dict(dict,title):
       os.chdir("C:/Users/lukas/Desktop/bachelor/data")
       with open(title+".json", "w") as outfile:
-            json.dump(dict, outfile)
+            json_file=json.dumps(dict)
+            outfile.write(json_file)
+            print("file changed")
       os.chdir("C:/Users/lukas/Desktop/bachelor")
 
 def assign_company_data():
@@ -116,15 +123,26 @@ def update_company_dict_time():
 
 
 def create_datasets():
+      global handelsregister
       handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
+      print("executed")
       find_all_companies()
+      print("all companies added")
       get_names_from_excel()
       find_gaming_companies_in_handelsregister() 
-      create_json_from_dict(handelsregister_dict,"handelsregister_dict")
+      print("gaming companies added")
+      create_json_from_dict(handelsregister_dict,"handelsregister_dict") 
       create_json_from_dict(gaming_company_dict,"gaming_company_dict")
+      print("finished")
 
+def start_script(operation):
+      if operation=="read":
+            read_in_json_datasets()
+      if operation=="create":
+            create_datasets()
 
-
+start_script("read")                
+print(gaming_company_dict["2tainment GmbH"])
 def create_company_objects_from_excel():
       company_dataset=update_company_data_from_excel() #brauchen wir das hier?
       assign_company_data() #wir brauchen das company dict
