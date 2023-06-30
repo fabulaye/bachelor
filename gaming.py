@@ -7,6 +7,8 @@ import pandas as pd
 import time 
 import json
 import jsonlines
+import pytesseract as pyt
+import pdf2image 
 
 
 
@@ -19,35 +21,54 @@ handelsregister_unternehmen=[]
 json_dataset={}
 company_object_dict={}
 company_dict_time={}
-
+gaming_company_names_dict={}
+test_dict={}
 
 
 def read_in_json_datasets():
-      global handelsregister_dict,gaming_company_dict
       os.chdir("C:/Users/lukas/Desktop/bachelor/data")
-      #handelsregister_dict=json.loads("handelsregister_dict.json")
+      
+      with open("handelsregister_dict.json","r") as f:
+            data=f.readlines()[0]
+
+      handelsregister_dict=json.loads(data) 
+      
       with open("gaming_company_dict.json","r") as f:
             data=f.readlines()[0]
-            print(data)
-            print(type(data))
       gaming_company_dict=json.loads(data)
-      print(gaming_company_dict)
+      print("gaming companies eingelesen")
 
-#read_in_json_datasets()
+      with open("gaming_company_names.json","r") as f:
+            data=f.readlines()[0]
+      gaming_company_names_dict=json.loads(data)
+      print("gaming companies_names eingelesen")
+
+      
+      return handelsregister_dict,gaming_company_dict,gaming_company_names_dict
 
 
-def find_all_companies():
+
+
+
+def find_all_companies(handelsregister):
       counter=0
       for object in handelsregister:
-            #print(object)
+            
             handelsregister_unternehmen.append(object["name"])
-            try:
-                  handelsregister_dict[object["name"]]={'_registerArt':object["all_attributes"]['_registerArt'],'federal_state':object["all_attributes"]['federal_state'],'registered_office':object["all_attributes"]['registered_office'],'retrieved_at':object['retrieved_at']}
-            except:
-                  None
+            
+            #test_dict[object["name"]]=object["all_attributes"]
+            #print(object)
+            #try:
+                  #handelsregister_dict[object["name"]]=object["all_attributes"]#{'_registerArt':object["all_attributes"]['_registerArt'],'federal_state':object["all_attributes"]['federal_state'],'registered_office':object["all_attributes"]['registered_office'],'retrieved_at':object['retrieved_at']}
+            #except:
+                  #None
             #counter+=1
-            #if counter==1000:
+            #print(counter)
+            #print(counter)
+            #if counter==10:
+      
                   #break
+                  
                
 
 
@@ -103,7 +124,7 @@ def get_names_from_excel():
 
 
 
-def find_gaming_companies_in_handelsregister():
+def find_gaming_companies_in_handelsregister(handelsregister):
       counter=0
       for gaming_company in gaming_company_names:
             company_string=str(gaming_company+"\s*\w*\s*\w*\s*\w*\s*\w*") #vielleicht ohne klammern
@@ -111,38 +132,68 @@ def find_gaming_companies_in_handelsregister():
             gaming_company_regex=re.compile(company_string)
             for company in handelsregister_unternehmen: #for company in handelsregister: 
                   search=gaming_company_regex.findall(company)
+                  
                   if search!=[]:
-                        found_companies_list.append(search)
-                        gaming_company_dict[company]=handelsregister_dict[company]
-                  counter+=1
+                        print(search)
+                        found_companies_list.append(search[0])
+                        
 
+def check_if_company_is_gaming_company(handelsregister):
+      names=gaming_company_names_dict["names"]
+      for company_entry in handelsregister:
+            #print(company_entry["name"][])
+            
+            try:
+                  if company_entry["name"] in names:
+
+                        print("entry_found")
+                        gaming_company_dict[company_entry["name"]]=company_entry
+            except:
+                  None     
 
 def update_company_dict_time():
       for company_name,company in company_dict.items():
              company_dict_time[company_name]=company.time
 
+def update_json_files():
+      create_json_from_dict(test_dict,"handelsregister_dict") 
+      create_json_from_dict(gaming_company_dict,"gaming_company_dict")
+      create_json_from_dict(gaming_company_names_dict,"gaming_company_names")
 
 def create_datasets():
-      global handelsregister
       handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
+      #print(handelsregister.values())
       print("executed")
-      find_all_companies()
+      find_all_companies(handelsregister)
       print("all companies added")
       get_names_from_excel()
-      find_gaming_companies_in_handelsregister() 
+      find_gaming_companies_in_handelsregister(handelsregister) 
       print("gaming companies added")
-      create_json_from_dict(handelsregister_dict,"handelsregister_dict") 
-      create_json_from_dict(gaming_company_dict,"gaming_company_dict")
+      check_if_company_is_gaming_company(handelsregister) #funktioniert glaube ich nur wenn ich die liste reade
+      update_json_files()
       print("finished")
 
 def start_script(operation):
       if operation=="read":
-            read_in_json_datasets()
+            global handelsregister,handelsregister_dict,gaming_company_dict,gaming_company_names_dict
+            handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
+            handelsregister_dict,gaming_company_dict,gaming_company_names_dict=read_in_json_datasets()
+            update_json_files()
+            print(gaming_company_dict)
       if operation=="create":
             create_datasets()
 
-start_script("read")                
-print(gaming_company_dict["2tainment GmbH"])
+
+
+
+
+#start_script("read") 
+
+
+
+
+
+
 def create_company_objects_from_excel():
       company_dataset=update_company_data_from_excel() #brauchen wir das hier?
       assign_company_data() #wir brauchen das company dict
@@ -195,3 +246,29 @@ def search_for_annual_account(text):
             if goal!=[]:
                   print(goal)
 
+dokument_link="https://www.unternehmensregister.de/ureg/result.html;jsessionid=CD652253DDDB0B2DEE19F279514012AE.web03-1?submitaction=showPrintDoc&id=31793656&pid=0"
+
+
+os.chdir("C:/Users/lukas/Desktop/bachelor/pdf")
+#hks_pdf=PdfReader("result.pdf")
+#print(type(hks_pdf))
+#seite=hks_pdf.pages[1]
+#print(seite)
+pyt.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract'
+#test_string=pyt.image_to_string("screenshot.png")
+#print(test_string)
+
+
+
+def get_text_from_pdf(pdf_name):
+      os.chdir("C:/Users/lukas/Desktop/bachelor/pdf")
+      pages=pdf2image.pdf2image.convert_from_path(pdf_name+".pdf",poppler_path="C:/Users/lukas/Desktop/bachelor/pdf/poppler-23.05.0/Library/bin")
+      pdf_string=""
+      for i in range(len(pages)):
+            pages[i].save("page"+str(i)+".jpg","JPEG")
+            page_string=pyt.image_to_string("page"+str(i)+".jpg")
+            pdf_string=pdf_string+" "+page_string          
+      with open(pdf_name,"w") as f:
+            f.write(pdf_string)     
+
+get_text_from_pdf("result")           
