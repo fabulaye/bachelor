@@ -77,16 +77,17 @@ os.chdir("C:/Users/lukas/Desktop/bachelor")
 company_id=0
 
 class company():
-    def __init__(self,id,name,time) -> None:
+    def __init__(self,id,name,legal_form,state,employees=None) -> None:
           self.id=id
           self.name=name
           self.active=True
           self.link=""
-          self.time=time
           self.html=""
-          self.dict={"id":self.id,"status":self.active,"time":self.time}
-    def update_time(self):
-          self.time=time.time() 
+          self.dict={"id":self.id,"status":self.active}
+          self.legal_form=legal_form
+          self.state=state
+          self.employees=employees
+          self.annual_accounts={}
 
 
 def update_json(): #wir updaten das Json file mit den Infos aus dem excel file
@@ -108,10 +109,28 @@ def create_json_from_dict(dict,title):
             print("file changed")
       os.chdir("C:/Users/lukas/Desktop/bachelor")
 
+rechtsform_regex=re.compile("GmbH|UG|AG|KG|Unternehmensgesellschaft")
+
 def assign_company_data():
       global company_id
-      for index,row in company_dataset.iterrows():
-            company_object_dict[row["Unternehmen"]]=company(company_id,row["Unternehmen"],row["Time"])
+      #for index,row in company_dataset.iterrows():
+            #company_object_dict[row["Unternehmen"]]=company(company_id,row["Unternehmen"],row["Time"])
+      for company_name,attributes in gaming_company_dict.items():
+            rechtsform=rechtsform_regex.findall(company_name)[0]
+            #print(rechtsform)
+            if rechtsform!="":
+                  company_name=company_name.rstrip(rechtsform).lower().rstrip()
+            else:
+                  company_name=company_name.lower()      
+            #print(company_name)
+            try:
+                  officers=attributes["officers"]
+            except:
+                  officers=None      
+            if officers!=None:
+                  company_object_dict[company_name]=company(company_id,company_name,rechtsform,attributes["all_attributes"]["federal_state"],attributes["officers"])
+            else:      
+                  company_object_dict[company_name]=company(company_id,company_name,rechtsform,attributes["all_attributes"]["federal_state"])
             company_id+=1
 
 
@@ -136,6 +155,7 @@ def find_gaming_companies_in_handelsregister(handelsregister):
                   if search!=[]:
                         print(search)
                         found_companies_list.append(search[0])
+
                         
 
 def check_if_company_is_gaming_company(handelsregister):
@@ -179,7 +199,7 @@ def start_script(operation):
             handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
             handelsregister_dict,gaming_company_dict,gaming_company_names_dict=read_in_json_datasets()
             update_json_files()
-            print(gaming_company_dict)
+            
       if operation=="create":
             create_datasets()
 
@@ -187,8 +207,10 @@ def start_script(operation):
 
 
 
-#start_script("read") 
-
+start_script("read") 
+#print(gaming_company_dict)
+assign_company_data()
+#print(company_object_dict)
 
 
 
@@ -266,9 +288,114 @@ def get_text_from_pdf(pdf_name):
       pdf_string=""
       for i in range(len(pages)):
             pages[i].save("page"+str(i)+".jpg","JPEG")
-            page_string=pyt.image_to_string("page"+str(i)+".jpg")
+            page_string=pyt.image_to_string("page"+str(i)+".jpg",lang="deu")
             pdf_string=pdf_string+" "+page_string          
-      with open(pdf_name,"w") as f:
+      with open(pdf_name+".txt","w") as f:
             f.write(pdf_string)     
 
-get_text_from_pdf("result")           
+
+
+def create_text_for_all_files_in_dir():
+      dir_list=os.listdir("C:/Users/lukas/Desktop/bachelor/pdf")
+      for file in dir_list:
+            if file.endswith(".pdf"):
+                  file=file.rstrip(".pdf")
+                  text_name=file+".txt"
+                  print(text_name)
+                  print(dir_list)
+                  if text_name not in dir_list:
+                        print("new pdf found")
+                        get_text_from_pdf(file)
+
+
+create_text_for_all_files_in_dir()
+
+get_text_from_pdf("crytek2012")  
+
+
+pdf_text_dict={}
+
+
+def load_pdf_text():
+      files=os.listdir("C:/Users/lukas/Desktop/bachelor/pdf")
+      for file in files:
+            text_dict={}
+            if file.endswith("txt")==True:
+                  year=file[-8:-4]
+                  with open(file,"r") as f:
+                        text=f.readlines()
+                        text_dict[year]=text
+                        pdf_text_dict[file[:-8]]=text_dict #notation für filenames finden
+
+
+
+                
+company_annual_statements_dict={}
+load_pdf_text()
+
+
+
+numbers_string="[\s\d,.]*"
+year_regex=re.compile("\d{4}")
+immaterielle_vermögensgegestände_regex=re.compile("[I,i]materielle Vermögensgegenstände\s[\s\d,.]+")
+sachanlagen_regex=re.compile("Sachanlagen\s[\s\d,.]+")  
+finanzanlagen_regex=re.compile("[F,f]inanzanlagen\s[\s\d,.]+")
+vermögensgegenstände_regex=re.compile("sonstige Vermögensgegenstände\s[\s\d,.]+")
+kreditinstitute_regex=re.compile("Kreditinstituten*\s[\s\d,.]+")
+aktiva_regex=re.compile("Summe Aktiva\s[\s\d,.]+")
+eigenkapital_regex=re.compile("Eigenkapital\s[\s\d,.]+")
+gezeichnetes_kapital_regex=re.compile("[g,G]ezeichnetes Kapital\s[\s\d,.]+")
+gewinnvortrag_regex=re.compile("Gewinnvortrag\s[\s\d,.]+")
+jahresüberschuss_regex=re.compile("Jahresüberschuss\s[\s\d,.]+")
+rückstellungen_regex=re.compile("Rückstellungen\s[\s\d,.]+")
+verbindlichkeiten_regex=re.compile("Verbindlichkeiten\s[\s\d,.]+")
+rechnungsbegrenzungsposten_regex=re.compile("Rechnungsbegrenzungsposten\s[\s\d,.]+")
+passiva_regex=re.compile("Summe Passiva\s[\s\d,.]+")
+
+annual_acount_regex_dict={"imaterielle Vermögensgegenstände":immaterielle_vermögensgegestände_regex,"sachanlagen":sachanlagen_regex,"finanzanlagen":finanzanlagen_regex,"vermögesgegenstände":vermögensgegenstände_regex,"kreditinstitute":kreditinstitute_regex,"aktiva":aktiva_regex,"eigenkapital":eigenkapital_regex,"gezeichnetes_kapital":gezeichnetes_kapital_regex,"gewinnvortrag":gewinnvortrag_regex,"jahresüberschuss":jahresüberschuss_regex,"rückstellungen":rückstellungen_regex,"verbindlichkeiten":verbindlichkeiten_regex,"rechnungsbegrenzungsposten":rechnungsbegrenzungsposten_regex,"passiva":passiva_regex} 
+single_number_pattern=re.compile("\d+[,.]\d*[,.]*\d*[,.]*")
+
+
+def search_for_annual_account_items(text): #function returnt einen entry
+      data_dict={}
+      for string,pattern in annual_acount_regex_dict.items():
+            if pattern.findall(text)!=[]:
+                  print("pattern found")
+                  entry=pattern.findall(text)[0].lstrip(string.capitalize())
+                  dict_entry={string:entry} #regex dict hat strings als keys die den Regex beschreiben
+                  return [dict_entry,string]
+            #else:
+                  #return []
+      #data_dict["immaterielle_vermögensgegenstände"]=immaterielle_vermögensgegestände_regex.findall(text)
+      #data_dict["sachanlagen"]=sachanlagen_regex.findall(text)
+      
+
+yearly_data={}
+
+#def create_company_entries():
+      #for 
+
+#print(company_object_dict["crytek"])
+def search_pdf_text_for_data():
+      for company,dict in pdf_text_dict.items():
+            for year,text in dict.items():
+                  company_object_dict[company].annual_accounts[year]={} #wir erstellen für die Jahre zunächste ein leeres dict
+                  for string in text:
+                        item=search_for_annual_account_items(string)
+                        
+                        if item != None:
+                              dict,key=item
+                              print(dict[key])
+                              numbers=single_number_pattern.findall(dict[key])
+                              first=numbers[0]
+                              first=re.sub(",\d+","",first)
+                              dict[key]=first
+                              company_object_dict[company].annual_accounts[year].update(dict) #function return ein dict mit den relevanten daten aus dem einen pdf file
+                        #print(yearly_data) #wir überschreiben die Dinger?
+                  #company_annual_statements_dict[company]=yearly_data
+
+
+search_pdf_text_for_data()
+#print(company_annual_statements_dict)
+#print(company_object_dict["crytek"].annual_accounts)
+#print(pdf_text_dict)
