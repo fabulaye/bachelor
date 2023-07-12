@@ -83,7 +83,8 @@ class company():
           self.state=state
           self.employees=employees
           self.annual_accounts={}
-
+      def __str__(self) -> str:
+            return self.name
 
            
 
@@ -179,7 +180,6 @@ def check_if_company_is_gaming_company():
       gaming_company_names_dict=read_in_json_datasets()[2]           
       names=gaming_company_names_dict["names"]
       print("sind in function")
-      print(names)
       for company_entry in handelsregister:
             try:
                   if company_entry["name"] in names:
@@ -288,8 +288,6 @@ def load_pdf_text():
             if file.endswith("txt")==True:
                   year=file[-8:-4]
                   company_name=file[:-8].lower()
-                  print(year)
-                  print(company_name)
                   with open(file,"r") as f:
                         text=f.readlines()
                         text_dict[year]=text
@@ -299,31 +297,51 @@ def load_pdf_text():
                         account.text=text
 
       os.chdir("C:/Users/lukas/Desktop/bachelor")                  
-
+class flag():
+      def __init__(self) -> None:
+            self.status=False
+            self.logical_error=False
+            self.true_value_missing=False
 
 class account_item():
-      def __init__(self,name,regex,numbers=0,items=[]):
+      def __init__(self,name,regex,numbers=0,items=[],children=[]):
             self.name=name
             self.regex=regex
             self.items=items
-            if items==[]:
-                  self.subbranch=False
-            else:
-                  self.subbranch=True    
-            if len(items)>=1:
-                  self.theoretical_value=items#sum(items)
-            else:      
-                  self.theoretical_value=None
-            self.flagged=False
+            self.has_children=False  
+            self.flag=flag()
             self.numbers=numbers   
-            if type(numbers)==list:            
-                  self.true_value=numbers#eigentlich [0]
-            else:
-                  self.true_value=0   
+            self.true_value=0 
+            self.theoretical_value=0
+            self.children=children
+      def update_data(self):
+            if type(self.numbers)==list and len(self.numbers)>=2:            
+                  self.true_value=self.numbers[0]
+            if len(self.children)>=1:
+                  sum=0
+                  for child in self.children:
+                        if type(child.true_value)==float:
+                              sum+=child.true_value
+                        else:
+                              print("str in den numbers")      
+                  self.theoretical_value=sum 
+      def int_data(self):
+            if type(self.numbers)==list and len(self.numbers)>=2:
+                  for number in self.numbers:
+                        number=float(number)
+            self.true_value=float(self.true_value)
+            self.theoretical_value=float(self.theoretical_value)                
       def flag_entry(self):
-            if len(self.true_value)>=2:
-                  self.flagged=True
-                  
+            if self.theoretical_value!=self.true_value:
+                  self.flag.logical_error=True
+                  self.flag.status=True        
+            if int(self.true_value)==0:
+                  self.flag.true_value_missing=True
+                  self.flag.status=True    
+      def __str__(self) -> str:
+            return self.name      
+         
+      #verbindlichkeiten,kassenbestand          
 
  
 
@@ -332,91 +350,137 @@ class annual_account():
             self.aktiva=account_item("aktiva",aktiva_regex,aktiva_items)
             self.passiva=account_item("passiva",passiva_regex,items=passiva_items) 
             self.text=""
-            self.dict={}
-      def values(self): #wir nehmen ein item  , der andere Weg ist wahrscheinlich effizienter
+            
+            #children umlaufvermögen
+            self.vorräte=account_item("vorräte",vorräte_regex)
+            self.forderungen=account_item("forderungen",forderungen_regex)
+            self.kassenbestand=account_item("kassenbestand",kassenbestand_regex)
+            
+            #self.jahresfehlbetrag=account_item("jahresfehlbetrag",jahresfehlbetrag_regex)
+
+            #children aktiva
+            self.umlaufvermögen=account_item("umlaufvermögen",umlaufvermögen_regex,children=[self.vorräte,self.forderungen,self.kassenbestand])
+            self.anlagevermögen=account_item("anlagevermögen",anlagevermögen_regex)
+            self.rechnungsabgrenzungsposten=account_item("rechnungsabgrenzungsposten",rechnungsabgrenzungsposten_regex)
+            
+            self.aktiva=account_item("aktiva",aktiva_regex,children=[self.anlagevermögen,self.umlaufvermögen,self.rechnungsabgrenzungsposten,self.fehlbetrag])
+            #children passiva
+            self.gezeichnetes_kapital=account_item("gezeichnetes_kapital",gezeichnetes_kapital_regex,)
+            self.verlustvortrag=account_item("verlustvortrag",verlustvortrag_regex)
+            self.überschuss=account_item("überschuss",überschuss_regex)
+            self.gewinnvortrag=account_item("gewinnvortrag",gewinnvortrag_regex)
+            self.fehlbetrag=account_item("fehlbetrag",fehlbetrag_regex)
+
+            self.eigenkapital=account_item("eigenkapital",eigenkapital_regex,children=[self.gewinnvortrag,self.fehlbetrag,self.verlustvortrag,self.gezeichnetes_kapital])
+            self.rückstellungen=account_item("rückstellungen",rückstellungen_regex)
+            self.verbindlichkeiten=account_item("verbindlichkeiten",verbindlichkeiten_regex)
+
+            self.passiva=account_item("passiva",passiva_regex,children=[self.eigenkapital,self.rückstellungen,self.verbindlichkeiten])
+
+            self.all_items=[self.vorräte,self.forderungen,self.kassenbestand,self.gewinnvortrag,self.jahresfehlbetrag,self.umlaufvermögen,self.anlagevermögen,self.eigenkapital,self.eigenkapital,
+                            self.aktiva,self.rückstellungen,self.verbindlichkeiten,self.passiva]
+            self.first_layer=[self.aktiva,self.passiva]
+            self.dict={"aktiva":{"true_value":self.aktiva.true_value}}
+            self.flag_dict={}
+      def create_dict(self):
+            for aktivapassiva in self.first_layer:
+                  self.dict[aktivapassiva.name]={"true_value":aktivapassiva.true_value,"theoretical_value":aktivapassiva.theoretical_value,"children":{}}
+                  for child in aktivapassiva.children:
+                        dict={}
+                        dict[child.name]={"true_value":child.true_value,"theoretical_value":child.theoretical_value,"children":{}}
+                        self.dict[aktivapassiva.name]["children"].update(dict)
+                        if len(child.children)>=1:
+                              for grandchild in child.children:
+                                    dict_two={}
+                                    dict_two[grandchild.name]={"true_value":grandchild.true_value,"theoretical_value":grandchild.theoretical_value}
+                                    print(child.name)
+                                    print(self.dict[aktivapassiva.name]["children"][child.name])
+                                    print(grandchild.name)
+                                    self.dict[aktivapassiva.name]["children"][child.name]["children"].update(dict_two)
+                        #hier müssen noch mehr layer kommen
+      def search_for_data(self):
             if self.text!="":
-                  for aktiva_items in self.aktiva.items:
-                        if aktiva_items.subbranch==False:
-                              #search through text
-                              print("")
-                              aktiva_items.numbers=pattern_finder(aktiva_items.regex,self.text)
-                        else:
-                              for aktiva_subitems in aktiva_items.items:
-                                    if aktiva_subitems.subbranch==False:
-                                          aktiva_subitems.numbers=pattern_finder(aktiva_items.regex,self.text)
-                                    else:
-                                          for aktiva_subitems_subitems in aktiva_subitems:
-                                                aktiva_subitems_subitems.numbers=pattern_finder(aktiva_items.regex,self.text)
-      def collect_data(self):                   
-            #self.dict="" #hier noch weiter machen
-            for aktivapassiva in [self.aktiva,self.passiva]:
-                  for account_item in aktivapassiva.items:
-                        if account_item.subbranch==False:
-                              #search through text
-                              self.dict[account_item.name]=account_item.true_value
-                        else:
-                              self.dict[account_item.name]={}
-                              first_layer=self.dict[account_item.name]
-                              for account_item_two in account_item.items:
-                                    if account_item_two.subbranch==False:
-                                          first_layer[account_item_two.name]=account_item_two.true_value
-                                    else:
-                                          first_layer[account_item_two.name]={}
-                                          second_layer=first_layer[account_item_two.name]
-                                          for account_item_three in account_item_two.items:
-                                                second_layer[account_item_three.name]=account_item_three.true_value
-                                                
+                  for item in self.all_items:
+                        data=pattern_finder(item.regex,self.text)
+                        item.numbers=data
+                        item.int_data()
+                        item.update_data()
+                        print(data)
+      def check_flags(self):
+            for item in self.all_items:
+                  item.flag_entry()
+                  if item.flag.status==True:
+                        self.flag_dict[item.name]={"logical_error":item.flag.logical_error,"true_value_missing":item.flag.true_value_missing}
+
+
+                                                      
 def initialize_data_assignment_for_annual_accounts():
       for company_name,company_object in company_object_dict.items():
-            company_object #hier die annual accounts erstellen
-            accounts_dict=company_object.annual_accounts
-            for year,annual_account_object in accounts_dict.items(): #haben wir hier überhaupt die items schon?
-                  print(annual_account_object)
-                  annual_account_object.values()
-                  annual_account_object.collect_data()
+            for year,annual_account_object in company_object.annual_accounts.items(): #haben wir hier überhaupt die items schon?
+                  annual_account_object.search_for_data()
+                  annual_account_object.create_dict()
+                  annual_account_object.check_flags()
 
 
 company_annual_statements_dict={}
 
 
-numbers_string="[\d\s,.]+"
+numbers_string="[\w\d\s,öä.]+\d$"
+
 #aktiva
+aktiva_regex=re.compile("Aktiva"+numbers_string,flags=re.I)
 anlagevermögen_regex=re.compile("Anlagevermögen"+numbers_string,flags=re.I) #oberkategorie von sachanlagen
 sachanlagen_regex=re.compile("Sachanlagen"+numbers_string,flags=re.I)  
+umlaufvermögen_regex=re.compile("umlaufvermögen"+numbers_string,flags=re.I)
+#umlaufvermögen children
+vorräte_regex=re.compile("vorräte"+numbers_string,flags=re.I)
+forderungen_regex=re.compile("forderungen"+numbers_string,flags=re.I)
+kassenbestand_regex=re.compile("kassenbestand"+numbers_string,flags=re.I)
 
+rechnungsabgrenzungsposten_regex=re.compile("Rechnungsabgrenzungsposten"+numbers_string,flags=re.I)
+fehlbetrag_regex=re.compile("fehlbetrag"+numbers_string,flags=re.I)
+#rechnungsabgrenzungspostren+anlagevermögen+umlaufvermögen=Aktiva
 
-
-
-
-year_regex=re.compile("\d{4}")
-immaterielle_vermögensgegestände_regex=re.compile("[I,i]materielle Vermögensgegenstände\s[\s\d,.]+")
-
-finanzanlagen_regex=re.compile("finanzanlagen"+numbers_string,flags=re.I)
-vermögensgegenstände_regex=re.compile("sonstige Vermögensgegenstände"+numbers_string,flags=re.I)
-kreditinstitute_regex=re.compile("Kreditinstituten"+numbers_string,flags=re.I)
-aktiva_regex=re.compile("Summe Aktiva"+numbers_string,flags=re.I)
+#passiva
+passiva_regex=re.compile("Passiva"+numbers_string,flags=re.I)
 eigenkapital_regex=re.compile("Eigenkapital"+numbers_string,flags=re.I)
-gezeichnetes_kapital_regex=re.compile("gezeichnetes kapital"+numbers_string,flags=re.I)
+#eigenkapital children
+eingefordertes_kapital_regex=re.compile("eingefordertes kapital"+numbers_string,flags=re.I)
+gezeichnetes_kapital_regex=re.compile("gezeichnetes kapital"+numbers_string,flags=re.I) #teil von eingefordertem kapital
+einlagen_regex=re.compile("einlagen"+numbers_string,flags=re.I)#teil von eingefordertem kapital
 gewinnvortrag_regex=re.compile("Gewinnvortrag"+numbers_string,flags=re.I)
 jahresüberschuss_regex=re.compile("Jahresüberschuss"+numbers_string,flags=re.I)
 rückstellungen_regex=re.compile("Rückstellungen"+numbers_string,flags=re.I)
+
+immaterielle_vermögensgegestände_regex=re.compile("[I,i]materielle Vermögensgegenstände\s[\s\d,.]+")
+finanzanlagen_regex=re.compile("finanzanlagen"+numbers_string,flags=re.I)
+vermögensgegenstände_regex=re.compile("sonstige Vermögensgegenstände"+numbers_string,flags=re.I)
+kreditinstitute_regex=re.compile("Kreditinstituten"+numbers_string,flags=re.I)
 verbindlichkeiten_regex=re.compile("\w*\s*verbindlichkeiten"+numbers_string,flags=re.I)
-rechnungsbegrenzungsposten_regex=re.compile("Rechnungsbegrenzungsposten"+numbers_string,flags=re.I)
-passiva_regex=re.compile("Summe Passiva"+numbers_string,flags=re.I)
+jahresfehlbetrag_regex=re.compile("jahresfehlbetrag"+numbers_string,flags=re.I)
+verlustvortrag_regex=re.compile("verlustvortrag"+numbers_string,flags=re.I)
+überschuss_regex=re.compile("überschuss"+numbers_string,flags=re.I)
+
+
 character_pattern=re.compile("[^\d,.\s]\w*")
 annual_acount_regex_dict={"imaterielle Vermögensgegenstände":immaterielle_vermögensgegestände_regex,"sachanlagen":sachanlagen_regex,"finanzanlagen":finanzanlagen_regex,"vermögesgegenstände":vermögensgegenstände_regex,"kreditinstitute":kreditinstitute_regex,"aktiva":aktiva_regex,"eigenkapital":eigenkapital_regex,"gezeichnetes_kapital":gezeichnetes_kapital_regex,"gewinnvortrag":gewinnvortrag_regex,"jahresüberschuss":jahresüberschuss_regex,"rückstellungen":rückstellungen_regex,"verbindlichkeiten":verbindlichkeiten_regex,"rechnungsbegrenzungsposten":rechnungsbegrenzungsposten_regex,"passiva":passiva_regex} 
 single_number_pattern=re.compile("\d+[,.]\d*[,.]*\d*[,.]*")
 all_numbers_pattern=re.compile(numbers_string)
-vorräte_regex=re.compile("vorräte"+numbers_string,flags=re.I)
-forderungen_regex=re.compile("forderungen"+numbers_string,flags=re.I)
-kassenbestand_regex=re.compile("kassenbestand"+numbers_string,flags=re.I)
-jahresfehlbetrag_regex=re.compile("jahresfehlbetrag"+numbers_string,flags=re.I)
-umlaufvermögen_regex=re.compile("umlaufvermögen"+numbers_string,flags=re.I)
+
+
+
+
+#rechnungsabgrenzungsposten
+#aktiva,passiva klappen jetzt?
+
+
 
 umlaufvermögen_items=[account_item("vorräte",vorräte_regex),account_item("forderungen",forderungen_regex),account_item("kassenbestand",kassenbestand_regex)]
 eigenkapital_items=[account_item("gewinnvortrag",gewinnvortrag_regex),account_item("jahresfehlbetrag",jahresfehlbetrag_regex)]
 passiva_items=[account_item("eigenkapital",eigenkapital_regex,eigenkapital_items),account_item("rückstellungen",rückstellungen_regex),account_item("verbindlichkeiten",verbindlichkeiten_regex)]
 aktiva_items=[account_item("anlagevermögen",anlagevermögen_regex,items=[account_item("sachanlagen",sachanlagen_regex)]),account_item("umlaufvermögen",umlaufvermögen_regex,items=umlaufvermögen_items)]    
+
+y=account_item("klappts",aktiva_regex)
 
 early_items=[]
 #create_gaming_company_names_underscored_json()
@@ -429,9 +493,9 @@ load_pdf_text() #muss jetzt nach den regex kommen
 
 def pattern_finder(pattern,text): #function für die annual_account class
       for string in text:
-            if pattern.findall(text)!=[]:
+            if pattern.findall(string)!=[]:
                   #print("pattern found")
-                  item=pattern.findall(text)[0] #return immer eine liste mit nur einem eintrag
+                  item=pattern.findall(string)[0] #return immer eine liste mit nur einem eintrag
                   words=character_pattern.findall(item)#könnte das ein problem sein das ich für das erste selecte?
                   key=""
 
@@ -480,10 +544,18 @@ def clean_numbers(list):
       new_list=[]
       for entry in list:
             if single_number_pattern.findall(entry)!=[]:
+
                   split=entry.split()
                   for string in split:
-                        new_list.append(string)
-      return new_list
+                        print(string)
+                        try: #wir haben hier anscheinend auch strings drin
+                              string=string.replace(".","")
+                              string=string.replace(",",".") #deutsche schreibeweise zur englischen
+                              string=float(string)
+                              new_list.append(string)
+                        except:
+                              None      
+      return new_list   
 
 def flag_entries(dict):
       for key,list in dict.items(): #das hier muss ich noch ändern
@@ -528,6 +600,10 @@ def update_all_company_json():
 
 
 initialize_data_assignment_for_annual_accounts()
-print(company_object_dict["crytek"].annual_accounts["2012"].dict)
+print(company_object_dict["a4vr"].annual_accounts["2021"].dict)
+print(company_object_dict["a4vr"].annual_accounts["2021"].flag_dict)
 print("script finished")
 
+
+#fixliste
+#kassenbestand, 
