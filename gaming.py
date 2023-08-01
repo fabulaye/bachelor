@@ -1,8 +1,5 @@
-from PyPDF2 import PdfReader
 import os
-import requests
 import re
-from bs4 import BeautifulSoup
 import pandas as pd
 import time 
 import json
@@ -13,15 +10,10 @@ import pdf2image
 
 
 counter=0
-handelsregister_dict={}
-company_names_excel=[]
-found_companies_list=[]
-handelsregister_unternehmen=[]
 json_dataset={}
 company_object_dict={}
 company_dict_time={}
 gaming_company_names_dict={}
-test_dict={}
 
 def create_dict_from_json(filename,dir="C:/Users/lukas/Desktop/bachelor/data"):
       os.chdir(dir)
@@ -34,33 +26,15 @@ def create_dict_from_json(filename,dir="C:/Users/lukas/Desktop/bachelor/data"):
 
 
 
-def read_in_json_datasets():
-      os.chdir("C:/Users/lukas/Desktop/bachelor/data")
-      
-      #with open("handelsregister_dict.json","r") as f:
-      #      data=f.readlines()[0]
-      #handelsregister_dict=json.loads(data) 
-      handelsregister_dict=create_dict_from_json("handelsregister_dict.json")
-      gaming_companies_handelsregister=create_dict_from_json("gaming_companies_handelsregister.json")
-      print("gaming companies eingelesen")
-      gaming_company_names_dict=create_dict_from_json("gaming_company_names_dict.json")
-      print("gaming companies_names eingelesen")
 
-      
-      return handelsregister_dict,gaming_companies_handelsregister,gaming_company_names_dict
-
-
-
-
-
-def find_all_companies(handelsregister):
+def create_handelsregister_companies_names_list():
+      handelsregister_companies_names=[]
       counter=0
       for object in handelsregister:
-            
-            handelsregister_unternehmen.append(object["name"])
-            
+            handelsregister_companies_names.append(object["name"])
+      return handelsregister_companies_names      
                   
-               
+            
 
 
 os.chdir("C:/Users/lukas/Desktop/bachelor")
@@ -154,15 +128,7 @@ def get_names_from_excel(company_dataset):
 
 
 
-def create_gaming_company_names_json():
-      os.chdir("C:/Users/lukas/Desktop/bachelor/data")
-      company_dataset=pd.read_excel("test.xlsx")
-      company_names_excel=get_names_from_excel(company_dataset)
-      handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
-      find_all_companies(handelsregister)
-      find_gaming_companies_in_handelsregister(handelsregister)
-      gaming_company_names_dict={"names":found_companies_list}
-      create_json_from_dict(gaming_company_names_dict,"gaming_company_names_dict")
+
       
 def create_gaming_company_names_underscored_json():
       os.chdir("C:/Users/lukas/Desktop/bachelor/data")
@@ -177,94 +143,58 @@ def create_gaming_company_names_underscored_json():
 
 #ich möchte eigentlich das die strings aus dem excel dokument und sonst alle anderen matchen
 
-def find_gaming_companies_handelsregister():
-      found_companies_list=[]
-      for gaming_company in company_names_excel:
-            company_string=str(gaming_company+"\s*\w*\s*\w*\s*\w*\s*\w*") #vielleicht ohne klammern
-            gaming_company_regex=re.compile(company_string)
-            for company in handelsregister_unternehmen: #for company in handelsregister: 
-                  search=gaming_company_regex.findall(company)
-                  
-                  if search!=[]:
-                        search=search[0]
-                        #search=search.replace(" ","_")
-                        found_companies_list.append(search)
-      return found_companies_list                  
+def create_company_regex(name):
+      company_string=str(name+"\s*\w*\s*\w*\s*\w*\s*\w*") #vielleicht ohne klammern
+      company_regex=re.compile(company_string) 
+      return company_regex
+
+def return_regex_hits(regex_search):
+      if regex_search!=[]:
+            hits=regex_search[0]
+            return hits
+               
 
 
+def create_list_with_full_names(incomplete_names):
+      full_names=[]
+      for name in incomplete_names:
+            regex=create_company_regex(name)
+            for company in handelsregister_companies_names: #for company in handelsregister: 
+                  search=regex.findall(company)
+                  result=return_regex_hits(search)
+                  full_names.append(result)
+            
 
+def create_list_of_matches_handelsregister(company_names):
+      companies_in_handelsregister=[]
+      for company_name in company_names:
 
-def iter_through_jsonl():
-     counter=0
-     jsonl=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
-     for object in jsonl.iter(type=dict):
-           counter+=1
-           print(object)                       
-
-
-
-def check_if_company_is_gaming_company():
-      gaming_companies_handelsregister={}
-      handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
-      gaming_company_names_dict=create_dict_from_json("gaming_company_names_dict.json")           
-      names=gaming_company_names_dict["names"]
-      for company_entry in handelsregister:
             try:
-                  if company_entry["name"] in names:
-                        gaming_companies_handelsregister[company_entry["name"]]=company_entry
+                  if company_name in handelsregister_companies_names:
+                        companies_in_handelsregister.append(company_name)
             except:
                   None     
-      return gaming_companies_handelsregister
-
-gaming_companies_handelsregister=check_if_company_is_gaming_company()
-
-
-def update_json_files():
-      create_json_from_dict(test_dict,"handelsregister_dict") 
-      create_json_from_dict(gaming_companies_handelsregister,"gaming_company_dict")
-      create_json_from_dict(gaming_company_names_dict,"gaming_company_names")
-
-def create_datasets():
-      handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
-      
-      #print(handelsregister.values())
-      print("executed")
-      find_all_companies(handelsregister)
-      print("all companies added")
-      os.chdir("C:/Users/lukas/Desktop/bachelor/data")
-      company_dataset=pd.read_excel("test.xlsx")
-      get_names_from_excel(company_dataset)
-      find_gaming_companies_handelsregister(handelsregister) 
-      print("gaming companies added")
-      check_if_company_is_gaming_company() #funktioniert glaube ich nur wenn ich die liste reade
-      update_json_files()
-      print("finished")
-
-def start_script(operation):
-      if operation=="read":
-            global handelsregister,handelsregister_dict,gaming_company_dict,gaming_company_names_dict
-            handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
-            handelsregister_dict,gaming_company_dict,gaming_company_names_dict=read_in_json_datasets()
-            update_json_files()
-            
-      if operation=="create":
-            create_datasets()
+      return companies_in_handelsregister
 
 
 
-
-
-
-
+def create_dict_of_specific_companies_in_handelsregister(list_of_names):
+      gaming_companies_handelsregister={}          
+      names=gaming_company_names_dict["names"]
+      for name in list_of_names:
+            for company_entry in handelsregister:
+                  try:
+                        data=company_entry[name]
+                        gaming_companies_handelsregister[name]=data
+                  except:
+                        None      
+      return gaming_companies_handelsregister #todo weakes naming
 
 
 
 os.chdir("C:/Users/lukas/Desktop/bachelor/pdf")
 
 pyt.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract'
-#test_string=pyt.image_to_string("screenshot.png")
-#print(test_string)
-  
 tesserect_link="https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html"
 
 
@@ -296,7 +226,7 @@ def create_text_for_all_files_in_dir():
                         get_text_from_pdf(file) #hier werden die texdokumente erstellt etc.
 
 
-create_text_for_all_files_in_dir() #kann jedes mal durchlaufen
+
 
 def check_mismatches_in_lists(list_1,list_2):
       mismatch=[]
@@ -305,11 +235,9 @@ def check_mismatches_in_lists(list_1,list_2):
                   mismatch.append(i)
       return mismatch
 
-company_names_underscored=create_dict_from_json("gaming_company_names_underscored_dict.json")
 
 
 
-pdf_text_dict={}
 
 def read_text(file):
   with open(file,"r") as f:
@@ -342,8 +270,7 @@ def assign_text_to_account_objects():
       os.chdir("C:/Users/lukas/Desktop/bachelor")     
 
 
-create_annual_account_objects()
-assign_text_to_account_objects()      
+   
 
 class flag():
       def __init__(self) -> None:
@@ -425,7 +352,7 @@ class annual_account():
             
             self.aktiva=account_item("aktiva",aktiva_regex,children=[self.anlagevermögen,self.umlaufvermögen,self.rechnungsabgrenzungsposten,self.fehlbetrag],account_id=self)
             #children passiva
-            self.gezeichnetes_kapital=account_item("gezeichnetes_kapital",gezeichnetes_kapital_regex,,account_id=self)
+            self.gezeichnetes_kapital=account_item("gezeichnetes_kapital",gezeichnetes_kapital_regex,account_id=self)
             self.eingefordertes_kapital=account_item("eingefordertes_kapital",eingefordertes_kapital_regex,children=[self.gezeichnetes_kapital],account_id=self)
             self.verlustvortrag=account_item("verlustvortrag",verlustvortrag_regex,account_id=self)
             self.überschuss=account_item("überschuss",überschuss_regex,account_id=self)
@@ -507,9 +434,6 @@ def initialize_data_assignment_for_annual_accounts():
                   annual_account_object.check_flags()
 
 
-company_annual_statements_dict={}
-
-
 numbers_string="[\w\d\s,öä.]+\d$"
 
 #aktiva
@@ -556,73 +480,15 @@ all_numbers_pattern=re.compile(numbers_string)
 
 
 
-
-#create_gaming_company_names_underscored_json()
-start_script("read") #die drei nochmal in ne func?
-
-
-create_company_objects() #hier erstellen wir die company objects´
-
 def get_list_of_keys(dict):
-      keys=dict.keys()[0]
-      return keys
+      keys_list=[]
+      keys=dict.keys()
+      for key in keys:
+            keys_list.append(key)
+      return keys_list
 
 
 
-mismatches=check_mismatches_in_lists(company_names_underscored,get_list_of_keys(company_object_dict))
-
-
-create_texts_dict() #muss jetzt nach den regex kommen
-
-    
-
-def pattern_finder(pattern,text): #function für die annual_account class
-      for string in text:
-            if pattern.findall(string)!=[]:
-                  #print("pattern found")
-                  item=pattern.findall(string)[0] #return immer eine liste mit nur einem eintrag
-                  words=character_pattern.findall(item)#könnte das ein problem sein das ich für das erste selecte?
-                  key=""
-
-                  for word in words:
-                        key=key+" "+word
-                  key=key.lstrip()      
-                  numbers=all_numbers_pattern.findall(item)
-                  numbers=clean_numbers(numbers)
-                  print(numbers)
-                  return numbers
-
-
-def search_for_annual_account_items(text): #function returnt einen entry
-      data_dict={}
-      for string,pattern in annual_acount_regex_dict.items():
-            if pattern.findall(text)!=[]:
-                  #print("pattern found")
-                  item=pattern.findall(text)[0] #return immer eine liste mit nur einem eintrag
-                  
-                  words=character_pattern.findall(item)#könnte das ein problem sein das ich für das erste selecte?
-                  key=""
-
-                  for word in words:
-                        key=key+" "+word
-                  key=key.lstrip()      
-                  numbers=all_numbers_pattern.findall(item)
-                  numbers=clean_numbers(numbers)
-                  save=False
-                  for string in numbers:
-                        if string!=" " or ",":
-                              save=True
-                  if save==True:            
-                        dict_entry={key:numbers}
-                        #flag_entries(dict_entry)
-                        return dict_entry  #regex dict hat strings als keys die den Regex beschreiben
-                  #print(dict_entry)
-                  #nicht den vorgefertigten String nehmen sondern was davor steht! als key
-                  
-                  break
-
-
-flagged_entries={}
 
 def clean_numbers(list):
       new_list=[]
@@ -640,13 +506,6 @@ def clean_numbers(list):
                               None      
       return new_list   
 
-
-
-yearly_data={}
-
-item_list=[]
-
-
 def update_all_company_json():
       companies_dir="C:/Users/lukas/Desktop/bachelor/data/companies"
       data_dict={}
@@ -659,6 +518,25 @@ def update_all_company_json():
 #update_all_company_json()
 
 
+#
+handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
+handelsregister_companies_names=create_handelsregister_companies_names_list()  
+company_dataset=pd.read_excel("test.xlsx")
+company_names_excel=get_names_from_excel(company_dataset)
+company_names_underscored=create_dict_from_json("gaming_company_names_underscored_dict.json")
+gaming_companies_handelsregister=check_if_company_is_gaming_company()
+handelsregister_dict=create_dict_from_json("handelsregister_dict.json")
+gaming_company_names_dict=create_dict_from_json("gaming_company_names_dict.json")
+company_object_dict_keys=get_list_of_keys(company_object_dict)
+mismatches=check_mismatches_in_lists(company_names_underscored,company_object_dict_keys)
+
+
+
+#functions
+create_company_objects() #hier erstellen wir die company objects´
+create_text_for_all_files_in_dir()
+create_annual_account_objects()
+assign_text_to_account_objects()   
 initialize_data_assignment_for_annual_accounts()
 print(company_object_dict["2tainment"].annual_accounts["2019"].dict)
 update_all_company_json()
