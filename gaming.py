@@ -6,6 +6,17 @@ import json
 import jsonlines
 import pytesseract as pyt
 import pdf2image 
+import requests
+#from __future__ import print_function
+
+import os.path
+
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload
 
 
 
@@ -14,6 +25,65 @@ json_dataset={}
 company_object_dict={}
 company_dict_time={}
 gaming_company_names_dict={}
+
+
+def chdir_bachelor():
+      os.chdir("C:/Users/lukas/Desktop/bachelor")
+
+def chdir_data():
+      os.chdir("C:/Users/lukas/Desktop/bachelor/data")
+
+chdir_bachelor()
+
+# If modifying these scopes, delete the file token.json.
+SCOPES = ['https://www.googleapis.com/auth/drive']
+
+
+def token():
+      creds = None
+      if os.path.exists('token.json'):
+          creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+      # If there are no (valid) credentials available, let the user log in.
+      if not creds or not creds.valid:
+          if creds and creds.expired and creds.refresh_token:
+              creds.refresh(Request())
+          else:
+              flow = InstalledAppFlow.from_client_secrets_file(
+                  'credentials.json', SCOPES)
+              creds = flow.run_local_server(port=0)
+          # Save the credentials for the next run
+          with open('token.json', 'w') as token:
+              token.write(creds.to_json())
+      return creds
+
+#creds=token()
+
+def build_service():
+      try:
+          service = build('drive', 'v3', credentials=creds)
+      except HttpError as error:
+          # TODO(developer) - Handle errors from drive API.
+          print(f'An error occurred: {error}')
+      return service
+
+#service=build_service()
+chdir_data()
+
+
+
+
+def upload_pdfs():
+      os.chdir("C:/Users/lukas/Desktop/bachelor/pdf")
+      files=os.listdir()
+      headers={"Content-Type":"text","Content-Length":"50000"}
+      url="https://www.googleapis.com/upload/drive/v3/files?uploadType=media"
+      for file in files:
+            f=open(file,"r")
+            print(f)
+            requests.post(url=url,data=f,headers=headers)
+
+#upload_pdfs()
+
 
 def create_dict_from_json(filename,dir="C:/Users/lukas/Desktop/bachelor/data"):
       os.chdir(dir)
@@ -37,7 +107,7 @@ def create_handelsregister_companies_names_list():
             
 
 
-os.chdir("C:/Users/lukas/Desktop/bachelor")
+
 
 company_id=0
 
@@ -113,6 +183,7 @@ def return_rechtsform(company_name):
 def create_company_objects():
       global company_id
       for company_name,attributes in gaming_companies_handelsregister.items(): #aktuell sind die namen noch nicht standadized!!!
+                  print(company_name)
                   rechtsform=return_rechtsform(company_name)
                   company_object_dict[company_name]=company(company_id,company_name,rechtsform,attributes["all_attributes"]["federal_state"])
                   company_id+=1
@@ -180,7 +251,6 @@ def create_list_of_matches_handelsregister(company_names):
 
 def create_dict_of_specific_companies_in_handelsregister(list_of_names):
       gaming_companies_handelsregister={}          
-      names=gaming_company_names_dict["names"]
       for name in list_of_names:
             for company_entry in handelsregister:
                   try:
@@ -518,13 +588,18 @@ def update_all_company_json():
 #update_all_company_json()
 
 
-#
+chdir_data()
 handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
 handelsregister_companies_names=create_handelsregister_companies_names_list()  
 company_dataset=pd.read_excel("test.xlsx")
 company_names_excel=get_names_from_excel(company_dataset)
+company_names=create_dict_from_json("gaming_company_names_underscored_dict.json")["names"]
 company_names_underscored=create_dict_from_json("gaming_company_names_underscored_dict.json")
-gaming_companies_handelsregister=check_if_company_is_gaming_company()
+
+
+
+gaming_companies_handelsregister=create_dict_of_specific_companies_in_handelsregister(company_names)
+print(gaming_companies_handelsregister) #klappt die function
 handelsregister_dict=create_dict_from_json("handelsregister_dict.json")
 gaming_company_names_dict=create_dict_from_json("gaming_company_names_dict.json")
 company_object_dict_keys=get_list_of_keys(company_object_dict)
