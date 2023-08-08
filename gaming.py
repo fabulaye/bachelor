@@ -74,15 +74,13 @@ chdir_data()
 
 def upload_pdfs():
       os.chdir("C:/Users/lukas/Desktop/bachelor/pdf")
-      files=os.listdir()
-      headers={"Content-Type":"text","Content-Length":"50000"}
+      data=company_names_underscored
+      headers={"Content-Type":"document","Content-Length":"50000"}
       url="https://www.googleapis.com/upload/drive/v3/files?uploadType=media"
-      for file in files:
-            f=open(file,"r")
-            print(f)
-            requests.post(url=url,data=f,headers=headers)
+      response=requests.post(url=url,data=data,headers=headers)
+      print(response.text)
+      print(response.content)
 
-#upload_pdfs()
 
 
 def create_dict_from_json(filename,dir="C:/Users/lukas/Desktop/bachelor/data"):
@@ -250,15 +248,18 @@ def create_list_of_matches_handelsregister(company_names):
 
 
 def create_dict_of_specific_companies_in_handelsregister(list_of_names):
-      gaming_companies_handelsregister={}          
-      for name in list_of_names:
-            for company_entry in handelsregister:
-                  try:
-                        data=company_entry[name]
-                        gaming_companies_handelsregister[name]=data
-                  except:
-                        None      
-      return gaming_companies_handelsregister #todo weakes naming
+      dict={}          
+      handelsregister=load_handelsregister()
+      for company_entry in handelsregister:
+            name=company_entry["name"]
+            if name in list_of_names: #problem ist in diesem loop
+                  print(company_entry)
+                  data=company_entry
+                  dict[name]=data
+            #except:
+            #      string=f"{name} not found"
+            #      print(string)      
+      return dict #todo weakes naming
 
 
 
@@ -327,7 +328,7 @@ def create_annual_account_objects():
                   try:
                               company_object_dict[company_name].annual_accounts[year]=annual_account() #wir kreieren den account wenn es ein text dokument fpr das Jahr gibt
                   except:
-                              print("company object doesnt exist") 
+                              print(f"{company_name} object doesn't exist") 
 
 def assign_text_to_account_objects():
       os.chdir("C:/Users/lukas/Desktop/bachelor/pdf")
@@ -336,7 +337,10 @@ def assign_text_to_account_objects():
             if file.endswith("txt")==True:
                   year,company_name=deconstruct_file_name(file)
                   text=read_text(file)
-                  company_object_dict[company_name].annual_accounts[year].text=text
+                  try:
+                        company_object_dict[company_name].annual_accounts[year].text=text
+                  except: 
+                        print(f"couldn assign text to {company_name}")      
       os.chdir("C:/Users/lukas/Desktop/bachelor")     
 
 
@@ -587,19 +591,23 @@ def update_all_company_json():
 
 #update_all_company_json()
 
+def load_handelsregister():
+      handelsregister=jsonlines.open('C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl')
+      return handelsregister
 
 chdir_data()
-handelsregister=jsonlines.open("C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl")
+
+
+handelsregister=load_handelsregister()
 handelsregister_companies_names=create_handelsregister_companies_names_list()  
 company_dataset=pd.read_excel("test.xlsx")
 company_names_excel=get_names_from_excel(company_dataset)
-company_names=create_dict_from_json("gaming_company_names_underscored_dict.json")["names"]
+company_names=create_dict_from_json("gaming_company_names.json")["names"]
 company_names_underscored=create_dict_from_json("gaming_company_names_underscored_dict.json")
 
 
-
-gaming_companies_handelsregister=create_dict_of_specific_companies_in_handelsregister(company_names)
-print(gaming_companies_handelsregister) #klappt die function
+#gaming_companies_handelsregister=create_dict_of_specific_companies_in_handelsregister(company_names)
+gaming_companies_handelsregister=create_dict_from_json("gaming_company_dict.json")
 handelsregister_dict=create_dict_from_json("handelsregister_dict.json")
 gaming_company_names_dict=create_dict_from_json("gaming_company_names_dict.json")
 company_object_dict_keys=get_list_of_keys(company_object_dict)
@@ -613,12 +621,18 @@ create_text_for_all_files_in_dir()
 create_annual_account_objects()
 assign_text_to_account_objects()   
 initialize_data_assignment_for_annual_accounts()
-print(company_object_dict["2tainment"].annual_accounts["2019"].dict)
 update_all_company_json()
+
+
+creds=token()
+service=build_service()
+upload_pdfs()
+
 print("script finished")
 
 
 #fixliste:
+#die dinger saven
 #replace double entries
 #rechnungsposten im theoretical von den aktiva nicht berücksichtigt
 #eigenkapital/gezeichnetes Kapital, Kapitalrücklage,Bilanzverlust#
