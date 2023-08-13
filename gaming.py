@@ -1,98 +1,19 @@
 import os
 import re
 import pandas as pd
-import time 
-import json
 import jsonlines
 import pytesseract as pyt
-import pdf2image 
-import requests
+import change_directory as cdir
+from json_to_dict import json_to_dict
+from pdf_to_txt import pdf_to_txt
+
 #from __future__ import print_function
-
-import os.path
-
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaFileUpload
-
-
 
 counter=0
 json_dataset={}
 company_object_dict={}
 company_dict_time={}
 gaming_company_names_dict={}
-
-
-def chdir_bachelor():
-      os.chdir("C:/Users/lukas/Desktop/bachelor")
-
-def chdir_data():
-      os.chdir("C:/Users/lukas/Desktop/bachelor/data")
-
-chdir_bachelor()
-
-# If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/drive']
-
-
-def token():
-      creds = None
-      if os.path.exists('token.json'):
-          creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-      # If there are no (valid) credentials available, let the user log in.
-      if not creds or not creds.valid:
-          if creds and creds.expired and creds.refresh_token:
-              creds.refresh(Request())
-          else:
-              flow = InstalledAppFlow.from_client_secrets_file(
-                  'credentials.json', SCOPES)
-              creds = flow.run_local_server(port=0)
-          # Save the credentials for the next run
-          with open('token.json', 'w') as token:
-              token.write(creds.to_json())
-      return creds
-
-#creds=token()
-
-def build_service():
-      try:
-          service = build('drive', 'v3', credentials=creds)
-      except HttpError as error:
-          # TODO(developer) - Handle errors from drive API.
-          print(f'An error occurred: {error}')
-      return service
-
-#service=build_service()
-chdir_data()
-
-
-
-
-def upload_pdfs():
-      os.chdir("C:/Users/lukas/Desktop/bachelor/pdf")
-      data=company_names_underscored
-      headers={"Content-Type":"document","Content-Length":"50000"}
-      url="https://www.googleapis.com/upload/drive/v3/files?uploadType=media"
-      response=requests.post(url=url,data=data,headers=headers)
-      print(response.text)
-      print(response.content)
-
-
-
-def create_dict_from_json(filename,dir="C:/Users/lukas/Desktop/bachelor/data"):
-      os.chdir(dir)
-      with open(filename,"r") as f:
-            data=f.readlines()[0]
-
-      dict=json.loads(data) 
-      return dict
-
-
-
 
 
 def create_handelsregister_companies_names_list():
@@ -102,10 +23,6 @@ def create_handelsregister_companies_names_list():
             handelsregister_companies_names.append(object["name"])
       return handelsregister_companies_names      
                   
-            
-
-
-
 
 company_id=0
 
@@ -124,16 +41,6 @@ class company():
       def __str__(self) -> str:
             return self.name
 
-           
-
-
-def create_json_from_dict(dict,title,directory="C:/Users/lukas/Desktop/bachelor/data"):
-      os.chdir(directory)
-      with open(title+".json", "w") as outfile:
-            json_file=json.dumps(dict)
-            outfile.write(json_file)
-            print("file changed")
-      os.chdir("C:/Users/lukas/Desktop/bachelor")
 
 rechtsform_regex=re.compile("GmbH|UG|AG|KG|Unternehmensgesellschaft")
 
@@ -203,12 +110,12 @@ def create_gaming_company_names_underscored_json():
       os.chdir("C:/Users/lukas/Desktop/bachelor/data")
       dict={}
       dict["names"]=[]
-      names=create_dict_from_json("gaming_company_names_dict.json")
+      names=json_to_dict("gaming_company_names_dict.json")
       names=names["names"]
       for name in names:
             new_name=name.replace(" ","_")
             dict["names"].append(new_name) 
-      create_json_from_dict(dict,"gaming_company_names_underscored_dict")  
+      json_to_dict(dict,"gaming_company_names_underscored_dict")  
 
 #ich möchte eigentlich das die strings aus dem excel dokument und sonst alle anderen matchen
 
@@ -269,22 +176,9 @@ pyt.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract'
 tesserect_link="https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html"
 
 
-def get_text_from_pdf(pdf_name): #create jpgs from the pdf, create txt from the pictures, and delete the pictures
-      os.chdir("C:/Users/lukas/Desktop/bachelor/pdf")
-      pages=pdf2image.pdf2image.convert_from_path(pdf_name+".pdf",poppler_path="C:/Users/lukas/Desktop/bachelor/pdf/poppler-23.05.0/Library/bin")
-      pdf_string=""
-      for i in range(len(pages)):
-            pages[i].save("page"+str(i)+".jpg","JPEG")
-            page_string=pyt.image_to_string("page"+str(i)+".jpg",lang="deu",config="--psm 4")
-            pdf_string=pdf_string+" "+page_string          
-      with open(pdf_name+".txt","w") as f:
-            f.write(pdf_string) 
-      delete_jpg()          
+    
 
-def delete_jpg():
-      for file in os.listdir("C:/Users/lukas/Desktop/bachelor/pdf"):
-            if file.endswith(".jpg"):
-                  os.remove(file)
+
 
 def create_text_for_all_files_in_dir():
       dir_list=os.listdir("C:/Users/lukas/Desktop/bachelor/pdf")
@@ -294,7 +188,7 @@ def create_text_for_all_files_in_dir():
                   text_name=file+".txt"
                   if text_name not in dir_list:
                         print("new pdf found")
-                        get_text_from_pdf(file) #hier werden die texdokumente erstellt etc.
+                        pdf_to_txt(file) #hier werden die texdokumente erstellt etc.
 
 
 
@@ -587,7 +481,7 @@ def update_all_company_json():
             for year,account_object in company_object.annual_accounts.items():
                   data_dict[year]=account_object.dict
             #data_dict=company_object.annual_accounts
-            create_json_from_dict(data_dict,company_name,directory=companies_dir)
+            json_to_dict(data_dict,company_name,directory=companies_dir)
 
 #update_all_company_json()
 
@@ -602,34 +496,26 @@ handelsregister=load_handelsregister()
 handelsregister_companies_names=create_handelsregister_companies_names_list()  
 company_dataset=pd.read_excel("test.xlsx")
 company_names_excel=get_names_from_excel(company_dataset)
-company_names=create_dict_from_json("gaming_company_names.json")["names"]
-company_names_underscored=create_dict_from_json("gaming_company_names_underscored_dict.json")
+company_names=json_to_dict("gaming_company_names.json")["names"]
+company_names_underscored=json_to_dict("gaming_company_names_underscored_dict.json")
 
 
 #gaming_companies_handelsregister=create_dict_of_specific_companies_in_handelsregister(company_names)
-gaming_companies_handelsregister=create_dict_from_json("gaming_company_dict.json")
-handelsregister_dict=create_dict_from_json("handelsregister_dict.json")
-gaming_company_names_dict=create_dict_from_json("gaming_company_names_dict.json")
+gaming_companies_handelsregister=json_to_dict("gaming_company_dict.json")
+handelsregister_dict=json_to_dict("handelsregister_dict.json")
+gaming_company_names_dict=json_to_dict("gaming_company_names_dict.json")
 company_object_dict_keys=get_list_of_keys(company_object_dict)
 mismatches=check_mismatches_in_lists(company_names_underscored,company_object_dict_keys)
 
 
 
 #functions
-create_company_objects() #hier erstellen wir die company objects´
-create_text_for_all_files_in_dir()
-create_annual_account_objects()
-assign_text_to_account_objects()   
-initialize_data_assignment_for_annual_accounts()
-update_all_company_json()
-
-
-creds=token()
-service=build_service()
-upload_pdfs()
-
-print("script finished")
-
+#create_company_objects() #hier erstellen wir die company objects´
+#create_text_for_all_files_in_dir()
+#create_annual_account_objects()
+#assign_text_to_account_objects()   
+#initialize_data_assignment_for_annual_accounts()
+#update_all_company_json()
 
 #fixliste:
 #die dinger saven
