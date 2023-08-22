@@ -9,13 +9,10 @@ from pdf_to_txt import pdf_to_txt
 from read_txt import read_txt
 from get_list_of_keys import get_list_of_keys
 
-game_state=None
 #from __future__ import print_function
 
 counter=0
 company_object_dict={}
-
-
 
 def create_handelsregister_companies_names_list():
       handelsregister_companies_names=[]
@@ -24,7 +21,6 @@ def create_handelsregister_companies_names_list():
             handelsregister_companies_names.append(object["name"])
       return handelsregister_companies_names      
                   
-
 company_id=0
 
 class company():
@@ -159,6 +155,9 @@ def create_dict_of_specific_companies_in_handelsregister(list_of_names):
       return dict #todo weakes naming
 
 os.chdir("C:/Users/lukas/Desktop/bachelor/pdf")
+pyt.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract'
+tesserect_link="https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html"
+
 
 
 def deconstruct_file_name(file):
@@ -430,44 +429,19 @@ def load_handelsregister():
       handelsregister=jsonlines.open('C:/Users/lukas/Desktop/bachelor/data/handelsregister.jsonl')
       return handelsregister
 
-chdir_data()
-
-
+cdir.chdir_data()
 handelsregister=load_handelsregister()
 handelsregister_companies_names=create_handelsregister_companies_names_list()  
 company_dataset=pd.read_excel("test.xlsx")
 company_names_excel=get_names_from_excel(company_dataset)
-company_names=json_to_dict("gaming_company_names.json")["names"]
-company_names_underscored=json_to_dict("gaming_company_names_underscored_dict.json")
-
-
-#gaming_companies_handelsregister=create_dict_of_specific_companies_in_handelsregister(company_names)
-gaming_companies_handelsregister=json_to_dict("gaming_company_dict.json")
-handelsregister_dict=json_to_dict("handelsregister_dict.json")
-gaming_company_names_dict=json_to_dict("gaming_company_names_dict.json")
+gaming_companies_handelsregister=create_dict_of_specific_companies_in_handelsregister(company_names_excel)
 company_object_dict_keys=get_list_of_keys(company_object_dict)
 
-
-
-
-mismatches=check_mismatches_in_lists(company_names_underscored,company_object_dict_keys)
-
-
-
 #functions
-#create_company_objects() #hier erstellen wir die company objects´
+create_company_objects() #hier erstellen wir die company objects´
+create_annual_account_objects()
+assign_text_to_account_objects()   
+initialize_data_assignment_for_annual_accounts()
+update_all_company_json()
 
-#create_annual_account_objects()
-#assign_text_to_account_objects()   
-#initialize_data_assignment_for_annual_accounts()
-#update_all_company_json()
-
-#fixliste:
-#die dinger saven
-#replace double entries
-#rechnungsposten im theoretical von den aktiva nicht berücksichtigt
-#eigenkapital/gezeichnetes Kapital, Kapitalrücklage,Bilanzverlust#
-#dátaframe dat shit
-#gewinn und verlustrechnung
-#replace doubles in json mit namen und underscorede
 

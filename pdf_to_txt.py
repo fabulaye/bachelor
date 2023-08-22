@@ -1,6 +1,11 @@
 import os
 import pdf2image
 from del_jpg import del_jpg
+import pytesseract as pyt
+
+pyt.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract'
+tesserect_link="https://tesseract-ocr.github.io/tessdoc/ImproveQuality.html"
+
 def pdf_to_txt(pdf_name,pdf_path="C:/Users/lukas/Desktop/bachelor/pdf",txt_path="C:/Users/lukas/Desktop/bachelor/pdf"): #create jpgs from the pdf, create txt from the pictures, and delete the pictures
       os.chdir(pdf_path)
       pages=pdf2image.pdf2image.convert_from_path(pdf_name+".pdf",poppler_path="C:/Users/lukas/Desktop/bachelor/pdf/poppler-23.05.0/Library/bin")
