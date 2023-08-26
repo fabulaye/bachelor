@@ -1,3 +1,6 @@
+from annual_account import annual_account
+from company_object import company
+from json_to_dict import json_to_dict
 import os
 import re
 import pandas as pd
@@ -17,36 +20,27 @@ company_object_dict={}
                   
 company_id=0
 
-class company():
-      def __init__(self,id,name,legal_form,state,employees=None) -> None:
-          self.id=id
-          self.name=name
-          self.active=True
-          self.link=""
-          self.html=""
-          self.dict={"id":self.id,"status":self.active}
-          self.legal_form=legal_form
-          self.state=state
-          self.employees=employees
-          self.annual_accounts={}
-      def __str__(self) -> str:
-            return self.name
-
-
 rechtsform_regex=re.compile("GmbH|UG|AG|KG|Unternehmensgesellschaft")
 
-def standardize_name(company_name):
-      rechtsform_regex_search=rechtsform_regex.findall(company_name)[0]
-      standadized_names=[]
-      if rechtsform_regex_search!="":
-            company_name=company_name.rstrip(rechtsform_regex_search).lower().rstrip()
-            company_name=company_name.replace(" ","_")
-      else:
-            company_name=company_name.lower()
-            company_name=company_name.replace(" ","_")   
-      standadized_names.append(company_name)
 
-def standardize_company_names(data):
+def strip_rechtsform(company_name):
+    rechtsform_regex_search=rechtsform_regex.findall(company_name)[0]
+    if rechtsform_regex_search!="":
+        company_name=company_name.rstrip(rechtsform_regex_search).lower().rstrip()
+    return company_name     
+
+      
+
+def standardize_name(company_name):
+    company_name=strip_rechtsform(company_name)  
+    company_name=company_name.lower()
+    company_name=company_name.replace(" ","_") 
+    company_name=company_name.rstrip()
+    return company_name  
+
+
+
+def standardize_company_names(data): #that shits now bugged
       if type(data)==dict:
             if len(dict)>1:
                   for company_name,attributes in data.items():
@@ -59,30 +53,6 @@ def standardize_company_names(data):
                   standardized_names=standardize_name(company_name)           
       return standardized_names
 
-
-def add_officers_company_objects(): #hier erstellen wir die company objects
-      global company_id
-      for company_name,attributes in gaming_companies_handelsregister.items():
-            try:
-                  officers=attributes["officers"]
-                  company_object_dict[company_name].officers=officers
-            except:
-                  None
-        
-def return_rechtsform(company_name):
-      rechtsform=rechtsform_regex.findall(company_name)[0]
-      return rechtsform
-
-def create_company_objects():
-      global company_id
-      for company_name,attributes in gaming_companies_handelsregister.items(): #aktuell sind die namen noch nicht standadized!!!
-                  print(company_name)
-                  rechtsform=return_rechtsform(company_name)
-                  company_object_dict[company_name]=company(company_id,company_name,rechtsform,attributes["all_attributes"]["federal_state"])
-                  company_id+=1
-
-  
-#ich möchte eigentlich das die strings aus dem excel dokument und sonst alle anderen matchen
 
 def create_company_regex(name):
       company_string=str(name+"\s*\w*\s*\w*\s*\w*\s*\w*") #vielleicht ohne klammern
@@ -115,21 +85,7 @@ def create_list_of_matches_handelsregister(company_names):
                   None     
       return companies_in_handelsregister
 
-
-
-
-def create_annual_account_objects():
-      files=os.listdir("C:/Users/lukas/Desktop/bachelor/pdf")
-      for file in files:
-            if file.endswith("txt")==True:
-                  year,company_name=deconstruct_file_name(file)
-                  try:
-                              company_object_dict[company_name].annual_accounts[year]=annual_account() #wir kreieren den account wenn es ein text dokument fpr das Jahr gibt
-                  except:
-                              print(f"{company_name} object doesn't exist") 
-  
-
-                                                 
+                     
 def initialize_data_assignment_for_annual_accounts():
       for company_name,company_object in company_object_dict.items():
             for year,annual_account_object in company_object.annual_accounts.items(): #haben wir hier überhaupt die items schon?
@@ -141,6 +97,18 @@ def initialize_data_assignment_for_annual_accounts():
 character_pattern=re.compile("[^\d,.\s]\w*")
 single_number_pattern=re.compile("\d+[,.]\d*[,.]*\d*[,.]*")
 
+def assign_text_to_account_objects():
+      cdir.chdir_pdf()
+      files=os.listdir("C:/Users/lukas/Desktop/bachelor/pdf")
+      for file in files:
+            if file.endswith("txt")==True:
+                  year,company_name=deconstruct_file_name(file)
+                  text=read_txt(file)
+                  try:
+                        company_object_dict[company_name].annual_accounts[year].text=text
+                  except: 
+                        print(f"couldn assign text to {company_name}")      
+      os.chdir("C:/Users/lukas/Desktop/bachelor")   
 
 def create_data_dict_from_annual_accounts():
       data_dict={}
@@ -167,32 +135,50 @@ def clean_numbers(list):
                               None      
       return new_list   
 
-def update_all_company_json():
-      companies_dir="C:/Users/lukas/Desktop/bachelor/data/companies"
-      data_dict={}
-      for company_name,company_object in company_object_dict.items():
-            for year,account_object in company_object.annual_accounts.items():
-                  data_dict[year]=account_object.dict
-            #data_dict=company_object.annual_accounts
-            json_to_dict(data_dict,company_name,directory=companies_dir)
+def deconstruct_file_name(file):
+      year=file[-8:-4]
+      company_name=file[:-8].lower()
+      return year,company_name
 
-#update_all_company_json()
+def return_rechtsform(company_name):
+      rechtsform=rechtsform_regex.findall(company_name)[0]
+      return rechtsform
+
+
+def create_company_objects():
+      global company_id
+      for company_name,attributes in gaming_companies_handelsregister.items(): #aktuell sind die namen noch nicht standadized!!!
+                  rechtsform=return_rechtsform(company_name)
+                  print(rechtsform)
+                  standardized_company_name=standardize_name(company_name)
+                  company_object_dict[standardized_company_name]=company(company_id,standardized_company_name,rechtsform,attributes["all_attributes"]["federal_state"])
+                  company_id+=1
+
+
+def create_annual_account_objects(): 
+      files=os.listdir("C:/Users/lukas/Desktop/bachelor/pdf")
+      for file in files:
+            if file.endswith("txt")==True:
+                year,company_name=deconstruct_file_name(file) #wichtig das underscore ist
+                try:
+                    company_object_dict[company_name].annual_accounts[year]=annual_account() #wir kreieren den account wenn es ein text dokument fpr das Jahr gibt
+                except:
+                    print(f"{company_name} object doesn't exist") 
+
 
 
 
 cdir.chdir_data()
-
-#der block alles in load stable data
-
-
-company_object_dict_keys=get_list_of_keys(company_object_dict)
-
-#functions
+gaming_companies_handelsregister=json_to_dict("gaming_companies_handelsregister.json")
 create_company_objects() #hier erstellen wir die company objects´
+print(company_object_dict)
 create_annual_account_objects()
 assign_text_to_account_objects()   
 initialize_data_assignment_for_annual_accounts()
-create_data_dict_from_annual_accounts()
-update_all_company_json()
 
 
+for company_name,company_object in company_object_dict.items():
+      print(company_object.annual_accounts)
+
+
+#fehler einmal mit rechtsform einmal ohne
