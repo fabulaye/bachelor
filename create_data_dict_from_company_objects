@@ -1,0 +1,6 @@
+def create_data_dict_from_company_objects():
+      data_dict={}
+      for company in company_object_dict:
+            data_dict[company.name]={}
+            for annual_account in company.annual_accounts:
+                  data_dict[company.name][annual_account.year]=annual_account.dict

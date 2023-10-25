@@ -1,4 +1,0 @@
-from check_for_mismatches_in_list import check_mismatches_in_lists
-from json_to_dict import json_to_dict
-#die files importieren
-mismatches=check_mismatches_in_lists(company_names_underscored,company_object_dict_keys)

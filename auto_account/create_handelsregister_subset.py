@@ -7,9 +7,8 @@ from change_directory import chdir_data
 chdir_data()
 gaming_company_names=json_to_dict("gaming_company_names.json")["names"]
 
-
-
-def create_dict_of_specific_companies_in_handelsregister():
+#
+def create_handelsregister_gaming_subset():
       dict={}          
       for company_entry in handelsregister:
             name=company_entry["name"]
@@ -18,12 +17,7 @@ def create_dict_of_specific_companies_in_handelsregister():
       return dict #todo weakes naming
 
 
-dict=create_dict_of_specific_companies_in_handelsregister()
+dict=create_handelsregister_gaming_subset()
 dict_to_json(dict,"gaming_companies_handelsregister")
-
-#ist 3d-io überhaupt im handelsregister?,  wie suche ich besser das nicht genau alles hitten muss?
-
-
-#problem es muss der exakte name sein wir haben aber oft nict die Rechtsform
 
 
