@@ -1,29 +1,30 @@
 from company_object import company
-from json_to_dict import json_to_dict
-import change_directory as cdir
-from json_to_dict import json_to_dict
-from pdf_to_txt import pdf_to_txt
-from read_txt import read_txt
+from import_manager import import_all_libraries
+from file_manager.json_to_dict import json_to_dict
+from file_manager.change_directory import chdir_pdf 
+import os
+from txt_pdf.pdf_to_txt import pdf_to_txt
+from txt_pdf.read_txt import read_txt
 from annual_account import annual_account,account_item,flag
-from create_company_objects import create_company_objects
+from txt_pdf.deconstruct_file_name import deconstruct_file_name
+from create_company_objects import create_company_objects #brauchen wir hier eig nicht
+
 
       
-def initialize_data_assignment_for_annual_accounts():
+def initialize_data_assignment_for_annual_accounts(company_object_dict):
       for company_name,company_object in company_object_dict.items():
             for year,annual_account_object in company_object.annual_accounts.items(): #haben wir hier überhaupt die items schon?
                   annual_account_object.search_for_data()
                   annual_account_object.create_dict()
                   annual_account_object.check_flags()
+      return company_object_dict
 
-
-
-
-def assign_text_to_account_objects():
-      cdir.chdir_pdf()
-      files=os.listdir("C:/Users/lukas/Desktop/bachelor/pdf")
+def assign_text_to_account_objects(company_object_dict):
+      chdir_pdf()
+      files=os.listdir("C:/Users/lukas/Desktop/bachelor/txt")
       for file in files:
             if file.endswith("txt")==True:
-                  year,company_name=deconstruct_file_name(file)
+                  company_name,year,file_type=deconstruct_file_name(file)
                   text=read_txt(file)
                   try:
                         company_object_dict[company_name].annual_accounts[year].text=text
@@ -33,16 +34,15 @@ def assign_text_to_account_objects():
 
 
 
-def create_annual_account_objects(): 
-      files=os.listdir("C:/Users/lukas/Desktop/bachelor/pdf")
+def create_annual_account_objects(company_object_dict): 
+      files=os.listdir("C:/Users/lukas/Desktop/bachelor/txt")
       for file in files:
             if file.endswith("txt")==True:
-                year,company_name=deconstruct_file_name(file) #wichtig das underscore ist
-                try:
-                    company_object_dict[company_name].annual_accounts[year]=annual_account() #wir kreieren den account wenn es ein text dokument fpr das Jahr gibt
-                except:
-                    print(f"{company_name} object doesn't exist") 
-
+                  company_name,year,file_type=deconstruct_file_name(file)      
+                  try:
+                        company_object_dict[company_name].annual_accounts[year]=annual_account() #wir kreieren den account wenn es ein text dokument fpr das Jahr gibt
+                  except:
+                        print(f"{company_name} object doesn't exist") 
 
 
 #vielleicht verschieben

@@ -4,7 +4,7 @@ def create_gaming_company_names_underscored_json():
       chdir_data()
       dict={}
       dict["names"]=[]
-      names=json_to_dict("gaming_company_names_dict.json")
+      names=json_to_dict("gaming_company_names.json")
       names=names["names"]
       for name in names:
             new_name=name.replace(" ","_")

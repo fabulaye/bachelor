@@ -1,6 +1,8 @@
 import pandas as pd
-from dict_to_json import dict_to_json
-from change_directory import chdir_data
+from import_manager import import_all_libraries
+import_all_libraries()
+from file_manager.dict_to_json import dict_to_json
+from file_manager.change_directory import chdir_data
 chdir_data()
 gaming_company_names_excel=pd.read_excel("test.xlsx")
 

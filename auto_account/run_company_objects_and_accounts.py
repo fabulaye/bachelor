@@ -1,0 +1,14 @@
+from create_company_objects import create_company_objects
+from create_annual_account_objects import create_annual_account_objects,initialize_data_assignment_for_annual_accounts,assign_text_to_account_objects
+
+
+
+
+
+
+company_object_dict=create_company_objects()
+print(company_object_dict)
+create_annual_account_objects(company_object_dict)
+assign_text_to_account_objects(company_object_dict)
+initialize_data_assignment_for_annual_accounts(company_object_dict)
+

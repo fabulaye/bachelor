@@ -1,6 +1,8 @@
 import os
 import pdf2image
-from del_jpg import del_jpg
+from import_manager import import_file_manager
+import_file_manager()
+from file_manager.del_jpg import del_jpg
 import pytesseract as pyt
 
 pyt.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR'

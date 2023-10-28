@@ -1,7 +1,7 @@
+import regex as re
 
 
 
-rechtsform_regex=re.compile("GmbH|UG|AG|KG|Unternehmensgesellschaft")
 
 
 def strip_rechtsform(company_name):
@@ -19,9 +19,6 @@ def standardize_name(company_name):
     company_name=company_name.rstrip()
     return company_name  
 
-               
-
-            
 
 def standardize_company_names(data): #that shits now bugged
       if type(data)==dict:
@@ -36,11 +33,4 @@ def standardize_company_names(data): #that shits now bugged
                   standardized_names=standardize_name(company_name)           
       return standardized_names
 
-def deconstruct_file_name(file):
-      year=file[-8:-4]
-      company_name=file[:-8].lower()
-      return year,company_name
 
-def return_rechtsform(company_name):
-      rechtsform=rechtsform_regex.findall(company_name)[0]
-      return rechtsform
