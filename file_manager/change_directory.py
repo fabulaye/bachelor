@@ -9,7 +9,13 @@ def chdir_pdf():
       os.chdir("C:/Users/lukas/Desktop/bachelor/pdf") 
 
 def chdir_auth():
-      os.chdir("C:/Users/lukas/Desktop/bachelor/auth")      
+      os.chdir("C:/Users/lukas/Desktop/bachelor/auth")    
+
+def chdir_txt():
+      os.chdir("C:/Users/lukas/Desktop/bachelor/txt")    
+
+def chdir_fig():
+      os.chdir("C:/Users/lukas/Desktop/bachelor/data/figures")          
 
 def switch_dir(type):
       if type =="pdf":

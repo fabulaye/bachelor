@@ -1,5 +1,8 @@
+
 from load_handelsregister import handelsregister
-from dict_to_json import dict_to_json
+from import_manager import import_file_manager
+import_file_manager()
+from file_manager.dict_to_json import dict_to_json
 
 def create_handelsregister_companies_names_list():
       handelsregister_companies_names=[]
@@ -9,5 +12,5 @@ def create_handelsregister_companies_names_list():
 
 names_list=create_handelsregister_companies_names_list()   
 
-dict={"handelsregister_company_names":names_list}
-dict_to_json(dict,"handelsregister_company_names")T
+
+dict_to_json(names_list,"handelsregister_company_names")

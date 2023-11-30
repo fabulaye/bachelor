@@ -13,9 +13,8 @@ def strip_rechtsform(company_name):
       
 
 def standardize_name(company_name):
-    company_name=strip_rechtsform(company_name)  
     company_name=company_name.lower()
-    company_name=company_name.replace(" ","_") 
+    #company_name=company_name.replace(" ","_") 
     company_name=company_name.rstrip()
     return company_name  
 

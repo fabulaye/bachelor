@@ -9,13 +9,13 @@ from cleaner.return_rechtsform import return_rechtsform
 chdir_data()
 gaming_company_names_handelsregister=json_to_dict("gaming_company_names_handelsregister.json")
 companies_not_found_in_handelsregister=json_to_dict("companies_not_found_in_hr.json")
-gaming_companies_handelsregister=json_to_dict("gaming_companies_handelsregister.json")
+gaming_company_data_handelsregister=json_to_dict("gaming_company_data_handelsregister.json")
 
 
 
 #rechtsform regex haben wir
 
-def create_full_dict():
+def create_gaming_company_names_and_rechtsform():
     full_dict={}
     for company_with_rechtsform in gaming_company_names_handelsregister:
         rechtsform=return_rechtsform(company_with_rechtsform)
@@ -25,18 +25,26 @@ def create_full_dict():
         full_dict[company_without_rechtsform]={rechtsform:None,"in_hr":False}
     return full_dict    
 
-def add_hr_data(dict):
-    for company_name,data_dict in gaming_companies_handelsregister.items():
+gaming_company_names_and_rechtsform=create_gaming_company_names_and_rechtsform()
+dict_to_json(gaming_company_names_and_rechtsform,"gaming_company_names_and_rechtsform")
+
+
+def add_hr_data(dict): #wir fügen unserem dict die handelsregister_data hinzu
+    for company_name,data_dict in gaming_company_data_handelsregister.items():
         rechtsform=return_rechtsform(company_name)
+        print(rechtsform)
         company_name=company_name.rstrip(rechtsform).rstrip()
+        print(company_name)
         try:
             dict[company_name].update(data_dict)
         except:
             print(f"{company_name} not found in dict")    
     return dict    
       
+gaming_company_names_and_rechtsform=json_to_dict("gaming_company_names_and_rechtsform.json")
 
-test=create_full_dict()  
 
-test=add_hr_data(test)
-print(test)
+gaming_companies_data=add_hr_data(gaming_company_names_and_rechtsform)
+dict_to_json(gaming_companies_data,"gaming_company_data")
+
+
