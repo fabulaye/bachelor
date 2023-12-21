@@ -1,0 +1,9 @@
+
+from create_annual_account_objects import create_annual_account_objects,assign_text_to_account_objects,initialize_data_assignment_for_annual_accounts,create_company_objects
+from change_directory import chdir_data
+create_company_objects() #hier erstellen wir die company objects´
+create_annual_account_objects()
+assign_text_to_account_objects()   
+initialize_data_assignment_for_annual_accounts()
+
+
