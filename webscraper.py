@@ -77,7 +77,7 @@ download_html_from_bmwi(names,abgeschlossen_url)
 
 date_regex=re.compile("\d\d\.\d\d\.\d\d\d\d")
 
-double_entry_regex=re.compile("[\w+\s+]+\w+[,;]\s*[\wäöü]+",flags=re.I)
+double_entry_regex=re.compile("[\w+\s+]+\w+[,;]\s*[\wäöü\s]+",flags=re.I)
 german_number=re.compile("[\d,\.]+")
 
 def read_txt(path):
@@ -96,58 +96,57 @@ def get_info_from_html(txt_file):
         project_name=h2_search[-1].text.split(",")[1].lstrip().lstrip("'")
     except:
         project_name=None 
-    multiple_entries=double_entry_regex.findall(data)   
-    rechtsform_list=[]
-    name_list=[]
-    place_list=[]
-    if len(multiple_entries)<=1:
-        rechtsform_list=return_rechtsform(name_and_rechtsform)
-        name_list=name_and_rechtsform.rstrip(rechtsform_list)
-        place_list=re.split(",|;",table[1].text)[1:]
-    else:
-        split_data=[]
-        for entry in multiple_entries:
-            split=re.split("[,;]",entry)
-            split_data.append(split[0])
-            split_data.append(split[1])
-        print(split_data)    
-        name_and_rechtsform_1=split_data[0]
-        rechtsform_1=return_rechtsform(name_and_rechtsform_1)
-        name_1=name_and_rechtsform_1.rstrip(rechtsform_1)
-        print(name_1)
-        print(rechtsform_1)
-        name_and_rechtsform_2=split_data[2]
-        rechtsform_2=return_rechtsform(name_and_rechtsform_2)
-        name_2=name_and_rechtsform_2.rstrip(rechtsform_2)
-        print(name_2)
-        print(rechtsform_2)
-        place_1=split_data[1]
-        place_2=split_data[2]
-        name_list.append([name_1,name_2])
-        rechtsform_list.append([rechtsform_1,rechtsform_2])
-        place_list.append([place_1,place_2])
+    multiple_entries=double_entry_regex.findall(data) 
+   
+
+    rechtsformen=[]
+    names=[]
+    cities=[]
+    bundesländer=[]
+    #rechtsform=return_rechtsform(name_and_rechtsform)
+    # if rechtsform!=None:
+    #    name=name_and_rechtsform[:-len(rechtsform)]
+    #else:
+    #    name=None
+    #place_list=re.split(",|;",table[1].text)[1:]
+
+    split_data=re.split("[,;]",data)
+    multiple_entries=double_entry_regex.findall(data)
+    for i in range(len(split_data)):
+        if i in [0,3,6]:
+            name_and_rechtsform=split_data[i]
+            rechtsform=return_rechtsform(name_and_rechtsform)
+            if rechtsform!=None:
+                name=name_and_rechtsform[:-len(rechtsform)]
+            else:
+                name=name_and_rechtsform
+                print(data)
+            names.append(name)
+            rechtsformen.append(rechtsform)
+        if i in [1,4,7]:
+            city=split_data[i]
+            cities.append(city)
+        if i in [2,5,8]:
+            bundesland=split_data[i]
+            bundesländer.append(bundesland)
     fördersumme=re.split("€|Euro",table[5].text)[0]
     fördersumme=german_number.findall(fördersumme)[0]
     fördersumme=int(re.sub(",00","",fördersumme).replace(".","").rstrip())
     datum=table[7].text
     start=date_regex.findall(datum)[0][-4:]
     end=date_regex.findall(datum)[1][-4:]
-    return name_list,rechtsform_list,project_name,place_list,fördersumme,start,end
+    return name,rechtsform,project_name,cities,bundesländer,fördersumme,start,end
     
 
-
-
-
-
-
+#missing entries wegen den doppelten
 
 def create_dataset(path):
-    df=pd.DataFrame(columns=["name","rechtsform","project_name","place","fördersumme","start","end"])
+    df=pd.DataFrame(columns=["name","rechtsform","project_name","city","bundesland","fördersumme","start","end"])
     counter=0
     for file in os.listdir(path):
         html_text=read_txt(path+"/"+file)
-        name,rechtsform,project_name,place,fördersumme,start,end=get_info_from_html(html_text)
-        data_dict={"name":name,"rechtsform":rechtsform,"project_name":project_name,"place":place,"fördersumme":fördersumme,"start":start,"end":end}
+        name,rechtsform,project_name,city,bundesland,fördersumme,start,end=get_info_from_html(html_text)
+        data_dict={"name":name,"rechtsform":rechtsform,"project_name":project_name,"city":city,"bundesland":bundesland,"fördersumme":fördersumme,"start":start,"end":end}
         df.loc[counter]=data_dict
         counter+=1
     return df    
@@ -161,4 +160,5 @@ df.to_excel("Games_Förderung_df.xlsx")
 
 
 
+# multiple:
 
