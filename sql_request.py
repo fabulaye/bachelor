@@ -117,11 +117,11 @@ def orbis_request():
     return full_df
 
 print(gaming_company_names_tuple)
-orbis_large=orbis_request()
+orbis=orbis_request()
 
 def find_missing_amadeus():
     missing_list=[]
-    for name in gaming_company_names_tuple:
+    for name in gaming_company_names_tuple_cap:
         if name not in whole_df["name_nat"]:
             missing_list.append(name)
     return missing_list
@@ -129,7 +129,7 @@ def find_missing_amadeus():
 def find_missing_orbis():
     missing_list=[]
     for name in gaming_company_names_tuple:
-        if name not in orbis_large["name_native"]:
+        if name not in orbis["name_native"]:
             missing_list.append(name)
     return missing_list
 
@@ -141,8 +141,15 @@ missing_entries=find_missing_orbis()
 
 connection.close()
 
-#bvd switchen
-#ich muss alle bvds durchgehen: bvd_large,medium,small,very_large
-#namen liste verbessern --> 
-#https://wrds-www.wharton.upenn.edu/pages/about/data-vendors/bureau-van-dijk-bvd/
+def create_bvd_id_df():
+    amadeus=pd.read_excel("full_sql.xslx")
+    orbis=pd.read_excel("sql_orbis.xlsx")
+    df=pd.concat([amadeus.loc["name_nat","idnr"]])
+    #mergen
+
+
+#checken welche fehlen
+#bvd index raussuchen 
+#data tabelle aufstellen
+
 

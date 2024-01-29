@@ -37,7 +37,6 @@ def delete_haftungsbeschränkt():
     for name in gaming_company_names:
         search=haftungsbeschränkt_regex.findall(name)
         if len(haftungsbeschränkt_regex.findall(name))>=1:
-            print(name[:-22])
             list.append(name[:-21])
         else:
             list.append(name)
