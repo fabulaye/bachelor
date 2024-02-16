@@ -4,9 +4,9 @@ import regex as re
 import pandas as pd
 import os
 
-
+os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
 connection=wrds.Connection(wrds_username="lukasmeyer")
-connection.create_pgpass_file()
+pg_pass_file=connection.create_pgpass_file()
 
 
 #libraries=test.list_libraries()
@@ -76,30 +76,24 @@ gaming_company_names_tuple=tuple(gaming_company_names_without_haftung)
 #variables_medium=
 
 
-def bvd_request(tuple,bvd_size):
-    if bvd_size=="small":
-        library_and_table="bvd_ama_small.amadeus_s"
-    if bvd_size=="medium":
-        library_and_table="bvd_ama_medium.amadeus_m"
-    if bvd_size=="large":
-        library_and_table="bvd_ama_large.amadeus_l"    
-    #verylarge fehlt
-        
+def bvd_request(tuple,country_code,file_name):
 
-
-    sql=connection.raw_sql(f"SELECT * FROM {library_and_table} WHERE cntrycde='DE' AND name IN {tuple}")
-    sql.to_excel("sql_request.xlsx")
+    bvd_small="bvd_ama_small.amadeus_s"
+    bvd_medium="bvd_ama_medium.amadeus_m"
+    bvd_large="bvd_ama_large.amadeus_l"    
+   
+    sql_small=connection.raw_sql(f"SELECT * FROM {bvd_small} WHERE cntrycde={country_code} AND name IN {tuple}")
+    sql_medium=connection.raw_sql(f"SELECT * FROM {bvd_medium} WHERE cntrycde={country_code} AND name IN {tuple}")
+    sql_large=connection.raw_sql(f"SELECT * FROM {bvd_large} WHERE cntrycde={country_code} AND name IN {tuple}")
 
     whole_df=pd.concat([sql_small,sql_medium,sql_large]) #WIP
-    whole_df.to_excel("complete_sql.xlsx")
+    whole_df.to_excel(file_name)
 
-    return sql
+    return whole_df
 
 
 tables=connection.list_tables("bvd_orbis_large")
 #print(tables)
-
-
 
 
 def orbis_request():
@@ -150,6 +144,8 @@ def create_bvd_id_df():
 
 #checken welche fehlen
 #bvd index raussuchen 
+#aus beiden quellen die indexes bündeln
 #data tabelle aufstellen
+
 
 
