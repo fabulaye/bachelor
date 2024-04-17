@@ -1,38 +1,48 @@
 import wrds
 import regex as re
-
 import pandas as pd
 import os
+from orbis_request import amadeus_request,orbis_request
+from file_manager.json_to_dict import json_to_dict
+
+connection=wrds.Connection(wrds_username="lukasmeyer")
 
 os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-connection=wrds.Connection(wrds_username="lukasmeyer")
-pg_pass_file=connection.create_pgpass_file()
 
+def rstrip_list(iterable):
+    list=[]
+    for string in iterable:
+        string=str(string)
+        list.append(string.rstrip())
+    return list
 
-#libraries=test.list_libraries()
-#amadeus_tables=test.list_tables("bvd_ama_small")
-
-#print(amadeus_tables)
-
-#print(variablen)
-
-#values=test.get_table("bvd_ama_small","amadeus_s",obs=100)
-#print(values)
-
-#help(test.get_table)
-
-
+def create_names_csv():
+    os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
+    games_förderung_df=pd.read_excel("Games_Förderung_df.xlsx")
+    names=rstrip_list(games_förderung_df["name"])
+    names=pd.DataFrame(names)
+    rechtsformen=rstrip_list(games_förderung_df["rechtsform"])
+    rechtsformen=delete_haftungsbeschränkt(rechtsformen)
+    rechtsformen=pd.DataFrame(rechtsformen)
+    df=pd.DataFrame()
+    df["name"]=names
+    df["rechtsform"]=rechtsformen
+    df.to_csv("gaming_company_names.csv")
+    return df
 
 def get_gaming_company_names():
     os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-    games_förderung_df=pd.read_excel("Games_Förderung_df.xlsx")
-    gaming_company_names=games_förderung_df["name"]+games_förderung_df["rechtsform"]
-    gaming_company_names=tuple(gaming_company_names.dropna())
+    
+    names=pd.read_csv("gaming_company_names.csv")["name"]
+    rechtsformen=pd.read_csv("gaming_company_names.csv")["rechtsform"]
+    names=list(map(lambda x: x+" ",names))
+    names=pd.Series(names)
+    print(names)
+    print(rechtsformen)
+    gaming_company_names=names+rechtsformen
     print(gaming_company_names)
     return gaming_company_names
 
-gaming_company_names=get_gaming_company_names()
-#gaming_company_names_tuple=tuple(map(lambda x: x.upper(),gaming_company_names))
 
 
 
@@ -47,8 +57,6 @@ def delete_haftungsbeschränkt(list_of_companies):
             list.append(name)
     return list
 
-gaming_company_names_without_haftung=delete_haftungsbeschränkt(gaming_company_names) 
-
 
 def capitalize_names(company_names):
     names=[]
@@ -62,62 +70,26 @@ def capitalize_names(company_names):
     return names
 
 
-gaming_company_names_cap_tuple=capitalize_names(gaming_company_names_without_haftung)
-gaming_company_names_tuple=tuple(gaming_company_names_without_haftung)
+os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
+gaming_company_names=get_gaming_company_names()
+names_tuple=tuple(gaming_company_names)
+cap_names_tuple=tuple(capitalize_names(gaming_company_names))
 
 
+gaming_companies_df=amadeus_request(connection,cap_names_tuple)
+gaming_companies_df.to_csv("subsidized_amadeus.csv")
 
+orbis_request_df=orbis_request(connection,cap_names_tuple)
+orbis_request_df.to_csv("subsidized_orbis.csv")
 
-#amadeus_medium=connection.list_tables("bvd_ama_medium")
-#amadeus_large=connection.list_tables("bvd_ama_large")
-
-
-#variables_small=connection.describe_table(library="bvd_ama_small",table="amadeus_s")
-#variables_medium=
-
-
-def bvd_request(tuple,country_code,file_name):
-
-    bvd_small="bvd_ama_small.amadeus_s"
-    bvd_medium="bvd_ama_medium.amadeus_m"
-    bvd_large="bvd_ama_large.amadeus_l"    
-   
-    sql_small=connection.raw_sql(f"SELECT * FROM {bvd_small} WHERE cntrycde={country_code} AND name IN {tuple}")
-    sql_medium=connection.raw_sql(f"SELECT * FROM {bvd_medium} WHERE cntrycde={country_code} AND name IN {tuple}")
-    sql_large=connection.raw_sql(f"SELECT * FROM {bvd_large} WHERE cntrycde={country_code} AND name IN {tuple}")
-
-    whole_df=pd.concat([sql_small,sql_medium,sql_large]) #WIP
-    whole_df.to_excel(file_name)
-
-    return whole_df
-
-
-tables=connection.list_tables("bvd_orbis_large")
-#print(tables)
-
-
-def orbis_request():
-    os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-    #large
-    "bvd_orbis_medium."
-    #small
-    sql_orbis_large=connection.raw_sql(f"SELECT * FROM bvd_orbis_large.ob_w_company_id_table_l WHERE ctryiso='DE' AND name_native in {gaming_company_names_tuple}")
-    sql_orbis_small=connection.raw_sql(f"SELECT * FROM bvd_orbis_small.ob_w_company_id_table_s WHERE ctryiso='DE' AND name_native in {gaming_company_names_tuple}")
-    sql_orbis_medium=connection.raw_sql(f"SELECT * FROM bvd_orbis_medium.ob_w_company_id_table_m WHERE ctryiso='DE' AND name_native in {gaming_company_names_tuple}")
-    full_df=pd.concat([sql_orbis_large,sql_orbis_small,sql_orbis_medium])
-    
-    full_df.to_excel("sql_orbis.xlsx")
-    print(full_df)
-    return full_df
-
-print(gaming_company_names_tuple)
-orbis=orbis_request()
 
 def find_missing_amadeus():
     missing_list=[]
-    for name in gaming_company_names_tuple_cap:
-        if name not in whole_df["name_nat"]:
+    for name in gaming_company_names_tuple:
+        if name not in bvd["name_nat"]:
             missing_list.append(name)
+    df=pd.DataFrame(missing_list)
+    df.to_excel("missing_companies_bvd.xlsx")
     return missing_list
 
 def find_missing_orbis():
@@ -125,25 +97,23 @@ def find_missing_orbis():
     for name in gaming_company_names_tuple:
         if name not in orbis["name_native"]:
             missing_list.append(name)
+    df=pd.DataFrame(missing_list)
+    df.to_excel("missing_companies_orbis.xlsx")        
     return missing_list
 
 
 
-missing_entries=find_missing_orbis()
-#print("missing_entries:",missing_entries)
+# economic data
+#mergen so das alle übernommen werden
+# komplettes df erstellen
+
+#connection.close()
 
 
-connection.close()
-
-def create_bvd_id_df():
-    amadeus=pd.read_excel("full_sql.xslx")
-    orbis=pd.read_excel("sql_orbis.xlsx")
-    df=pd.concat([amadeus.loc["name_nat","idnr"]])
-    #mergen
 
 
 #checken welche fehlen
-#bvd index raussuchen 
+#bvd index raussuchen   
 #aus beiden quellen die indexes bündeln
 #data tabelle aufstellen
 

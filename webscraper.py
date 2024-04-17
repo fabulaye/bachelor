@@ -85,6 +85,23 @@ def read_txt(path):
       text=f.readlines()
   return text  
 
+chdir_data()
+gemeinden_and_bundesländer=pd.read_csv("gemeinden_und_bundesländer.csv")
+gemeinden_list=gemeinden_and_bundesländer["gemeinden"].to_list()
+bundesländer_list=gemeinden_and_bundesländer["bundesländer"].to_list()
+gemeinde_bundesland_dict=dict(zip(gemeinden_list,bundesländer_list))
+
+
+
+def clean_split_data(split_data):
+    list=[]
+    for data_point in split_data:
+        data_point=data_point.replace("'","")
+        if data_point != "n" and len(data_point)>1:
+            list.append(data_point)
+    return list
+
+
 def get_info_from_html(txt_file):
     string=str(txt_file)
     soup=BeautifulSoup(string,features="html.parser")
@@ -96,39 +113,34 @@ def get_info_from_html(txt_file):
         project_name=h2_search[-1].text.split(",")[1].lstrip().lstrip("'")
     except:
         project_name=None 
-    multiple_entries=double_entry_regex.findall(data) 
-   
-
+  
     rechtsformen=[]
     names=[]
     cities=[]
     bundesländer=[]
-    #rechtsform=return_rechtsform(name_and_rechtsform)
-    # if rechtsform!=None:
-    #    name=name_and_rechtsform[:-len(rechtsform)]
-    #else:
-    #    name=None
-    #place_list=re.split(",|;",table[1].text)[1:]
+    split_data=re.split(r"[,;\\]",data)
+    split_data=clean_split_data(split_data)
 
-    split_data=re.split("[,;]",data)
-    multiple_entries=double_entry_regex.findall(data)
     for i in range(len(split_data)):
-        if i in [0,3,6]:
-            name_and_rechtsform=split_data[i]
+        data_point=split_data[i].lstrip().rstrip()
+        city,bundesland=city_search(data_point)
+        if city!=None:
+            cities.append(city)
+            bundesländer.append(bundesland)
+        if data_point in bundesländer or cities:
+            continue
+        #if i in [0,3,6]:
+        else:
+            print(data_point)
+            name_and_rechtsform=data_point
             rechtsform=return_rechtsform(name_and_rechtsform)
             if rechtsform!=None:
                 name=name_and_rechtsform[:-len(rechtsform)]
             else:
                 name=name_and_rechtsform
-                print(data)
             names.append(name)
             rechtsformen.append(rechtsform)
-        if i in [1,4,7]:
-            city=split_data[i]
-            cities.append(city)
-        if i in [2,5,8]:
-            bundesland=split_data[i]
-            bundesländer.append(bundesland)
+        
     fördersumme=re.split("€|Euro",table[5].text)[0]
     fördersumme=german_number.findall(fördersumme)[0]
     fördersumme=int(re.sub(",00","",fördersumme).replace(".","").rstrip())
@@ -139,6 +151,15 @@ def get_info_from_html(txt_file):
     
 
 #missing entries wegen den doppelten
+def city_search(string):
+    data_point=string.lstrip().rstrip()
+    if data_point in gemeinden_list:
+        city=data_point
+        bundesland=gemeinde_bundesland_dict[city]
+        return city,bundesland
+    else:
+        return None,None
+        bundesländer=gemeinden_and_bundesländer.iloc[:,2][gemeinden_and_bundesländer.iloc[:,0]==cities]
 
 def create_dataset(path):
     df=pd.DataFrame(columns=["name","rechtsform","project_name","city","bundesland","fördersumme","start","end"])
@@ -153,12 +174,9 @@ def create_dataset(path):
 
 
 df=create_dataset(path)
-
-print(df)    
+print(df)   
 chdir_data()
 df.to_excel("Games_Förderung_df.xlsx")    
 
 
-
-# multiple:
 

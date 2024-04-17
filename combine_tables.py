@@ -16,7 +16,6 @@ new_df.to_excel("combined_df.xlsx")
 published_projects_df=new_df[new_df["published"]==True]
 
 
-
 class year_data():
     def __init__(self,year) -> None:
         self.year=year
