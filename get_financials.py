@@ -14,7 +14,8 @@ def get_amadeus_financials(connection,ids,file_name="sql_amadeus_financial.csv")
     large_companies_df=connection.raw_sql(f"SELECT * FROM bvd_ama_large.financials_l WHERE idnr IN {ids}")
     verylarge_companies_df=connection.raw_sql(f"SELECT * FROM bvd_ama_verylarge.financials_v WHERE idnr IN {ids}")
     df=concat_dfs([small_companies_df,medium_companies_df,large_companies_df,verylarge_companies_df])
-    df.to_csv(file_name)
+    #df.set_index("idnr",inplace=True)
+    df.to_csv(file_name,index=False)
     return df
 
 
