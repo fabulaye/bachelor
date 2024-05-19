@@ -1,5 +1,5 @@
 import pandas as pd
-from file_manager.change_directory import chdir_data
+from lukasdata.change_directory import chdir_data
 
 def add_subsidized_column():
     chdir_data()
