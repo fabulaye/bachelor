@@ -3,7 +3,7 @@ import regex as re
 def my_rstrip(string,stripped):
     #pattern=re.compile(stripped)
     #search=pattern.findall(string)
-    if string.endswith(stripped):
+    if isinstance(stripped,str) and string.endswith(stripped):
         string=string[:-len(stripped)]
     return string
 
