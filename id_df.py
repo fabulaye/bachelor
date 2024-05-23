@@ -20,21 +20,6 @@ def create_orbis_id_csv(orbis_csv_name,id_csv_name):
     df.to_csv(id_csv_name)
     return df
 
-def find_common_ids(df_1,df_2):
-    if type(df_1)==pd.Series:
-        ids_1=df_1
-    else:
-        ids_1=df_1.iloc[:,1]
-    if type(df_2)==pd.Series:
-        ids_2=df_2
-    else:
-        ids_2=df_2.iloc[:,1]
-    common=[]
-    for id in ids_2:
-        if id in ids_1.to_list():
-            common.append(id)
-    common=pd.Series(common)
-    return common
 
 subsidized_ids_amadeus=create_amadeus_id_csv("subsidized_amadeus.csv","subsidized_amadeus_ids_de.csv")
 
@@ -44,7 +29,7 @@ subsidized_ids=pd.concat([subsidized_ids_amadeus,subsidized_ids_orbis]).unique()
 pd.DataFrame(subsidized_ids).to_csv("subsidized_ids_de.csv")
 
 german_companies=pd.read_csv("german_companies_amadeus.csv")
-from create_mask import create_in_mask
+from manipulation.create_mask import create_in_mask
 
 subsidized_mask=create_in_mask(german_companies.iloc[:,1],subsidized_ids)
 
