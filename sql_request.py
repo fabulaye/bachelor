@@ -2,60 +2,13 @@ import wrds
 import regex as re
 import pandas as pd
 import os
-from orbis_request import amadeus_request,orbis_request
-from file_manager.json_to_dict import json_to_dict
+from orbis_amadeus_request import amadeus_request,orbis_request,excact_name_amadeus_request
+from datahandling.json_to_dict import json_to_dict
+
 
 connection=wrds.Connection(wrds_username="lukasmeyer")
 
 os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-
-def rstrip_list(iterable):
-    list=[]
-    for string in iterable:
-        string=str(string)
-        list.append(string.rstrip())
-    return list
-
-def create_names_csv():
-    os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-    games_förderung_df=pd.read_excel("Games_Förderung_df.xlsx")
-    names=rstrip_list(games_förderung_df["name"])
-    names=pd.DataFrame(names)
-    rechtsformen=rstrip_list(games_förderung_df["rechtsform"])
-    rechtsformen=delete_haftungsbeschränkt(rechtsformen)
-    rechtsformen=pd.DataFrame(rechtsformen)
-    df=pd.DataFrame()
-    df["name"]=names
-    df["rechtsform"]=rechtsformen
-    df.to_csv("gaming_company_names.csv")
-    return df
-
-def get_gaming_company_names():
-    os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-    
-    names=pd.read_csv("gaming_company_names.csv")["name"]
-    rechtsformen=pd.read_csv("gaming_company_names.csv")["rechtsform"]
-    names=list(map(lambda x: x+" ",names))
-    names=pd.Series(names)
-    print(names)
-    print(rechtsformen)
-    gaming_company_names=names+rechtsformen
-    print(gaming_company_names)
-    return gaming_company_names
-
-
-
-
-def delete_haftungsbeschränkt(list_of_companies):
-    list=[]
-    haftungsbeschränkt_regex=re.compile("(haftungsbeschränkt)")
-    for name in list_of_companies:
-        search=haftungsbeschränkt_regex.findall(name)
-        if len(haftungsbeschränkt_regex.findall(name))>=1:
-            list.append(name[:-21])
-        else:
-            list.append(name)
-    return list
 
 
 def capitalize_names(company_names):
@@ -69,15 +22,19 @@ def capitalize_names(company_names):
     names=tuple(names)
     return names
 
-
+from replace_umlaut import replace_umlaut
 os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-gaming_company_names=get_gaming_company_names()
+gaming_company_names=pd.read_csv("bmwi_request.csv")["Zuwendungsempfänger"].to_list()
+gaming_company_names=replace_umlaut(gaming_company_names)
 names_tuple=tuple(gaming_company_names)
-cap_names_tuple=tuple(capitalize_names(gaming_company_names))
 
+cap_names_tuple=tuple(capitalize_names(gaming_company_names))
+print(cap_names_tuple)
 
 gaming_companies_df=amadeus_request(connection,cap_names_tuple)
 gaming_companies_df.to_csv("subsidized_amadeus.csv")
+
+print("amadeus done")
 
 orbis_request_df=orbis_request(connection,cap_names_tuple)
 orbis_request_df.to_csv("subsidized_orbis.csv")
