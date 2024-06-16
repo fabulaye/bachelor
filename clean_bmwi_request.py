@@ -1,9 +1,10 @@
 import pandas as pd
 import os
 from return_rechtsform import return_rechtsform
-from my_strip import my_rstrip
+from cleaning.my_strip import my_rstrip
+import regex as re
+from cleaning.my_strip import my_rstrip
 os.chdir("C:/Users/lukas/Desktop/bachelor/data")
-query=pd.read_csv("C:/Users/lukas/Desktop/bachelor/data/Suchliste_utf8.csv",delimiter=";",encoding="utf-8")
 
 
 def delete_equal(query):
@@ -11,7 +12,8 @@ def delete_equal(query):
     def lstrip_equal(string):
         if isinstance(string,str):
             string=string.lstrip("=")
-            string=string.rstrip(".1\"")
+            string=my_rstrip(string,".1\"")
+            #string=string.rstrip(".1\"")
             string=string.strip("\"")
             return string
         else:
@@ -22,9 +24,6 @@ def delete_equal(query):
         query.rename(columns={column_name:stripped_column_name},inplace=True)
     return query
 
-delete_equal(query)
-
-my_df=query.loc[:,["Zuwendungsempfänger","Gemeindekennziffer","Stadt/Gemeinde","Ort","Bundesland","Laufzeit von","Laufzeit bis","Fördersumme in EUR"]]
 
 def split_name_and_rechtsform(query):
     rechtsform_list=[]
@@ -38,9 +37,17 @@ def split_name_and_rechtsform(query):
     query["Rechtsform"]=rechtsform_list
     return query
 
-my_df=split_name_and_rechtsform(my_df)
-print(my_df)
-my_df.to_csv("bmwi_request.csv")
+
+def clean_bmwi_request():
+    os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
+    query=pd.read_csv("C:/Users/lukas/Desktop/bachelor/data/Suchliste_utf8.csv",delimiter=";",encoding="utf-8")
+    delete_equal(query)
+    column_indeces=[5,6,7,8,9,17,20,21,22]
+    my_df=query.iloc[:,column_indeces]
+    my_df=split_name_and_rechtsform(my_df)
+    print(my_df)
+    my_df.to_csv("bmwi_request.csv",index=False)
+
 
 
 

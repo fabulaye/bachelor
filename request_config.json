@@ -1,0 +1,28 @@
+{"orbis":{
+    
+    "input_file_path":"test",
+    "backup_name":"orbis_backup.csv",
+    "subsidized":"orbis_subsidized.csv",
+    "subsidized_ids":"orbis_subsidized_ids.csv",
+    "not_subsidized":"orbis_not_subsidized.csv",
+    "not_subsidized_ids":"orbis_not_subsidized_ids.csv",
+    "filtered_subsidized":"orbis_subsidized_filtered.csv",
+    "filtered_not_subsidized":"orbis_not_subsidized_filtered.csv",
+    "filtered_game_ev_members":"orbis_filtered_game_ev.csv",
+    "request_type":"exact"
+
+},
+
+"amadeus":{
+    "input_file_path":"test",
+    "backup_name":"amadeus_backup.csv",
+    "subsidized":"amadeus_subsidized.csv",
+    "subsidized_ids":"amadeus_subsidized_ids.csv",
+    "not_subsidized_ids":"amadeus_not_subsidized_ids.csv",
+    "not_subsidized":"amadeus_not_subsidized.csv",
+    "filtered_subsidized":"amadeus_subsidized_filtered.csv",
+    "filtered_not_subsidized":"amadeus_not_subsidized_filtered.csv",
+    "filtered_game_ev_members":"amadeus_filtered_game_ev.csv",
+    "request_type":"exact"
+    }}
+
