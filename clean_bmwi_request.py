@@ -4,8 +4,9 @@ from return_rechtsform import return_rechtsform
 from cleaning.my_strip import my_rstrip
 import regex as re
 from cleaning.my_strip import my_rstrip
-os.chdir("C:/Users/lukas/Desktop/bachelor/data")
+from datahandling.change_directory import chdir_data
 
+chdir_data()
 
 def delete_equal(query):
     column_names=query.columns
@@ -39,14 +40,17 @@ def split_name_and_rechtsform(query):
 
 
 def clean_bmwi_request():
-    os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-    query=pd.read_csv("C:/Users/lukas/Desktop/bachelor/data/Suchliste_utf8.csv",delimiter=";",encoding="utf-8")
+    chdir_data()
+    query=pd.read_csv("Suchliste_utf8.csv",delimiter=";",encoding="utf-8")
     delete_equal(query)
     column_indeces=[5,6,7,8,9,17,20,21,22]
     my_df=query.iloc[:,column_indeces]
     my_df=split_name_and_rechtsform(my_df)
     print(my_df)
     my_df.to_csv("bmwi_request.csv",index=False)
+
+
+
 
 
 

@@ -3,12 +3,14 @@ import os
 import numpy as np
 from manipulation.create_mask import create_in_mask
 from load_config import amadeus_not_subsidized,amadeus_subsidized_filtered,orbis_subsidized,amadeus_subsidized,orbis_subsidized_filtered,amadeus_game_ev_filtered,orbis_game_ev_filtered,orbis_not_subsidized,amadeus_not_subsidized_ids,orbis_not_subsidized_ids
+from datahandling.change_directory import chdir_data
 
-os.chdir("C:/Users/lukas/Desktop/bachelor/data")
 
-bmwi_request=pd.read_csv("bmwi_request.csv")
+
+
 
 def filter_correct_companies_amadeus(amadeus_request,bmwi_request):
+    chdir_data()
     names=[]
     for index_amadeus,company in enumerate(amadeus_request["name_nat"]):
         for index_bmwi,company_name_bmwi in enumerate(bmwi_request["Zuwendungsempfänger"]):
@@ -25,6 +27,7 @@ def filter_correct_companies_amadeus(amadeus_request,bmwi_request):
     return names
 
 def filter_correct_companies_orbis(orbis_request,bmwi_request):
+    chdir_data()
     names=[]
     for index_orbis,company in enumerate(orbis_request["name_native"]):
         for index_bmwi,company_name_bmwi in enumerate(bmwi_request["Zuwendungsempfänger"]):

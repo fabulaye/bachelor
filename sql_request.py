@@ -5,12 +5,12 @@ import os
 from orbis_amadeus_request import amadeus_request,orbis_request,orbis_exact_request,orbis_combination_request,amadeus_exact_request
 from datahandling.json_to_dict import json_to_dict
 from manipulation.my_list import upper_list
+from datahandling.change_directory import chdir_data
 from load_config import orbis_backup,amadeus_backup,orbis_subsidized,amadeus_subsidized,amadeus_not_subsidized,orbis_not_subsidized
 
 
-connection=wrds.Connection(wrds_username="lukasmeyer")
 
-os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
+chdir_data()
 
 
 def capitalize_names(company_names):
@@ -40,10 +40,6 @@ def continue_with_list(company_names,backup):
     return new_list
     
 
-from cleaning.replace_umlaut import replace_umlaut
-
-os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-
 
 from return_rechtsform import strip_rechtsform_list,return_rechtsform,filter_companies_with_rechtsform
 #game_ev_members=pd.read_csv("game_ev_members.csv",index_col=False)["name"].to_list()
@@ -52,7 +48,7 @@ from return_rechtsform import strip_rechtsform_list,return_rechtsform,filter_com
 #print(game_ev_members_rechtsform)
 #game_ev_members=strip_rechtsform_list(game_ev_members)
 
-def start_orbis_request(gaming_company_names,backup_name,output_file_name,request_type="exact",continue_from_backup=False,*args):
+def start_orbis_request(gaming_company_names,backup_name,output_file_name,connection,request_type="exact",continue_from_backup=False,*args):
     os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
     if continue_from_backup:
         orbis_save=pd.read_csv(backup_name)["name_native"].to_list()
@@ -67,7 +63,7 @@ def start_orbis_request(gaming_company_names,backup_name,output_file_name,reques
         orbis_request_df=orbis_combination_request(connection,cap_names_tuple,backup_name,output_file_name,backup_name)
         return orbis_request_df
 
-def start_amadeus_request(gaming_company_names,backup_name,output_file_name,request_type="exact",continue_from_backup=False,*args):
+def start_amadeus_request(gaming_company_names,backup_name,output_file_name,connection,request_type="exact",continue_from_backup=False,*args):
     os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
     if continue_from_backup:
         amadeus_save=pd.read_csv(backup_name)["name_native"].to_list()

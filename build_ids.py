@@ -39,7 +39,7 @@ def create_all_id_csv(): #vieleicht naming nochmal überarbeiten
     not_subsidized_ids_orbis["treatment"]=0
     not_subsidized_ids_amadeus["treatment"]=0
     df=pd.concat([df,not_subsidized_ids_orbis,not_subsidized_ids_amadeus])
-    df.drop_duplicates(subset=df["bvdid"])
+    df.drop_duplicates(subset="bvdid")
     df.to_csv("all_ids.csv")
     return df
 

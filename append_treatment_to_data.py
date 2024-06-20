@@ -10,14 +10,15 @@ def append_treatment_to_data(file_name,database):
         id="bvdid"
     if database=="amadeus":
         id="idnr"
-    new_df=pd.merge(df,all_ids,left_on=id,right_on="bvdid")
-    try:
-        new_df.drop("Unnamed: 0",axis=1)
-    except KeyError:
-        None
-    #merged_df = merged_df.drop(columns=['bvdid'])
-    chdir_sql_requests()
-    new_df.to_csv(file_name)
+    if "treatment" not in df.columns:
+        new_df=pd.merge(df,all_ids,left_on=id,right_on="bvdid")
+        #try:
+        #    new_df.drop("Unnamed: 0",axis=1)
+        #except KeyError:
+        #    None
+        #merged_df = merged_df.drop(columns=['bvdid'])
+        chdir_sql_requests()
+        new_df.to_csv(file_name)
 
 
 def append_treatment_to_sql_data():
