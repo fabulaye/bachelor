@@ -46,8 +46,10 @@ def clean_bmwi_request():
     column_indeces=[5,6,7,8,9,17,20,21,22]
     my_df=query.iloc[:,column_indeces]
     my_df=split_name_and_rechtsform(my_df)
+    my_df["project_id"]=range(len(my_df))
     print(my_df)
     my_df.to_csv("bmwi_request.csv",index=False)
+
 
 
 

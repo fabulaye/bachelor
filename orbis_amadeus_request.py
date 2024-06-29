@@ -4,7 +4,7 @@ import pandas as pd
 rechtsformen=["GmbH","UG","UG (haftungsbeschränkt)","AG","eG","Unternehmensgesellschaft","e.k","GmbH & Co. KG","mbH","PartG","GbR","PartG","StGes","bSE","KGaA","Handelsgesellschaft mit beschränkter Haftung","Gesellschaft mit beschränkter Haftung","KG"]
 rechtsformen_short=["GmbH","UG","UG (haftungsbeschränkt)","AG"]
 
-def orbis_request(connection,names_tuple,output_file_name): #jetzt auch gecapped?
+def orbis_request(connection,names_tuple,output_file_name,backup_name,continue_from_backup=False,*args): #jetzt auch gecapped?
     os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
     orbis_request_string_small="bvd_orbis_small.ob_w_company_id_table_s"
     orbis_request_string_medium="bvd_orbis_medium.ob_w_company_id_table_m"
@@ -43,7 +43,7 @@ def orbis_exact_request(connection,names_tuple,output_file_name,backup_name,cont
     return full_df
 
 
-def amadeus_request(connection,names_tuple,output_file_name,backup_name): #names need to be capitalized and with rechtsform
+def amadeus_request(connection,names_tuple,output_file_name,backup_name,continue_from_backup=False,*args): #names need to be capitalized and with rechtsform
     os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
     bvd_small="bvd_ama_small.amadeus_s"
     bvd_medium="bvd_ama_medium.amadeus_m"
@@ -56,7 +56,7 @@ def amadeus_request(connection,names_tuple,output_file_name,backup_name): #names
             request=connection.raw_sql(f"""SELECT * FROM {request_string} WHERE Upper(name_nat) LIKE '%%{name}%%'""")
             if not request.empty:
                 full_df=pd.concat([full_df,request])
-                full_df.to_csv(backup_name)   
+                full_df.to_csv(backup_name)  
                 #break  
     full_df.to_csv(output_file_name)  
     return full_df

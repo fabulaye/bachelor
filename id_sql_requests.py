@@ -5,15 +5,15 @@ import os
 def chdir_sql_requests():
     os.chdir("C:/Users/lukas/Desktop/bachelor/data/sql_data")
 
-orbis_tables=["ob_legal_info_","ob_key_financials_eur_","ob_all_cur_shh_1st_level_","ob_all_subs_first_level_","ob_detailed_fmt_ind_eur_int_","ob_dmc_previous_","ob_dmc_current_only_","ob_ind_g_fins_eur_int_","ob_ind_g_fins_eur_","ob_trade_description_"] #financials_orbis?
+orbis_tables=["ob_legal_info_","ob_key_financials_eur_","ob_all_cur_shh_1st_level_","ob_all_subs_first_level_","ob_detailed_fmt_ind_eur_int_","ob_dmc_previous_","ob_dmc_current_only_","ob_ind_g_fins_eur_int_","ob_ind_g_fins_eur_","ob_trade_description_",] #financials_orbis? 
 
 amadeus_tables=["company_","activities_","managers_","overview_","shareholders_","subsidiaries_","financials_"]
 
-def fetch_all(connection,database):
+def fetch_all(connection,database,id_df):
     connection=wrds.Connection(wrds_username="lukasmeyer")
-    all_ids=pd.read_csv("C:/Users/lukas/Desktop/bachelor/data/id/all_ids.csv")
+    #id_df=pd.read_csv("C:/Users/lukas/Desktop/bachelor/data/id/id_df.csv")
     chdir_sql_requests()
-    ids=tuple(all_ids["bvdid"])
+    ids=tuple(id_df["bvdid"]) #bvd_id könnte probleme machen
     if database=="amadeus":
         tables=amadeus_tables
         size_dict=amadeus_size_dict
@@ -30,7 +30,7 @@ def fetch_all(connection,database):
             table_name=table+size_short
             df_subtable=connection.raw_sql(f"SELECT * FROM {database_prefix}{size_long}.{table_name} WHERE {id_name} IN {ids}")
             #sub_ids=df_subtable[id_name]
-            #filtered_df = all_ids.loc[all_ids['bvdid'].isin(sub_ids)]
+            #filtered_df = id_df.loc[id_df['bvdid'].isin(sub_ids)]
             #df_subtable["treatment"]=filtered_df["treatment"]
             df_table=pd.concat([df_table,df_subtable],ignore_index=True)
         csv_name=table[:-1]+database_prefix[:-1]+".csv"

@@ -19,6 +19,8 @@ def append_treatment_to_data(file_name,database):
         #merged_df = merged_df.drop(columns=['bvdid'])
         chdir_sql_requests()
         new_df.to_csv(file_name)
+    else:
+        print("treatment already appended")
 
 
 def append_treatment_to_sql_data():
@@ -34,4 +36,5 @@ def append_treatment_to_sql_data():
 #ob_key_financials_eurbvd_orbis=pd.read_csv("sql_data/ob_key_financials_eurbvd_orbis.csv")
 #append_treatment_to_data("ob_key_financials_eurbvd_orbis.csv","orbis")
 
-append_treatment_to_sql_data()
+#append_treatment_to_sql_data()
+

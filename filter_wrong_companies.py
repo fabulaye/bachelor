@@ -60,7 +60,7 @@ def build_german_mask(df): #returned nicht ne mask sondern ein df
 
 def filter_game_ev_members():
     orbis_df=pd.read_csv(orbis_not_subsidized)
-    amadeus_df=pd.read_csv(amadeus_not_subsidized)
+    amadeus_df=pd.read_csv(amadeus_not_subsidized) #eigentlich können wir not subsidized noch nicht importieren wir müssen subsidized importieren
     german_mask_orbis=build_german_mask(orbis_df)
     german_mask_amadeus=build_german_mask(amadeus_df)
     print(german_mask_orbis)
@@ -73,12 +73,14 @@ def filter_game_ev_members():
 
 def create_orbis_filtered():
     orbis_request=pd.read_csv(orbis_subsidized)
+    bmwi_request=pd.read_csv("bmwi_request.csv")
     names=filter_correct_companies_orbis(orbis_request,bmwi_request)
     filtered_orbis=orbis_request[create_in_mask(orbis_request["name_native"],names)]
     filtered_orbis.to_csv(orbis_subsidized_filtered)
 
 def create_amadeus_filtered():
     amadeus_request=pd.read_csv(amadeus_subsidized)
+    bmwi_request=pd.read_csv("bmwi_request.csv")
     names=filter_correct_companies_amadeus(amadeus_request,bmwi_request)
     amadeus_orbis=amadeus_request[create_in_mask(amadeus_request["name_nat"],names)]
     amadeus_orbis.to_csv(amadeus_subsidized_filtered)
