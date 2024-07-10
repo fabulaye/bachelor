@@ -62,24 +62,17 @@ def control_variables_workflow(continue_from_backup=False,reset=False,):
         None
         #game_ev_request
     else: 
-        #create_orbis_control_csv
-        #crete_amadeus_control_csv import_config noch eintragen
         game_ev_workflow(exact_search=False,like_search=False,continue_from_backup=continue_from_backup)
         create_orbis_control_csv()
         create_amadeus_control_csv()
-        #start_orbis_request(game_ev_members[:5],orbis_backup,orbis_not_subsidized)
-        #start_amadeus_request(game_ev_members[:5],amadeus_backup,amadeus_not_subsidized)
         filter_game_ev_members()
-        #create_amadeus_control_csv()
-        #create_orbis_control_csv()
-        #create_amadeus_id_csv("control_variables_amadeus.csv","amadeus_control_ids.csv")
-        #create_orbis_id_csv("control_variables_orbis.csv","orbis_control_ids.csv")
-        #control_ids=combine_ids_unique("amadeus_control_ids.csv","orbis_control_ids.csv")
-        #os.chdir("C:/Users/lukas/Desktop/bachelor/data/id")
-        #control_ids.to_csv("all_not_subsidized_ids.csv")
-        #fetch_all(connection,"amadeus",control_ids) #brauchen wir die hier??
-        #fetch_all(connection,"orbis",control_ids)
-
+        create_amadeus_control_csv()
+        create_orbis_control_csv()
+        create_amadeus_id_csv("control_variables_amadeus.csv","amadeus_control_ids.csv")
+        create_orbis_id_csv("control_variables_orbis.csv","orbis_control_ids.csv")
+        control_ids=combine_ids_unique("amadeus_control_ids.csv","orbis_control_ids.csv")
+        control_ids.to_csv("all_not_subsidized_ids.csv")
+       
     
     create_orbis_id_csv(orbis_not_subsidized,orbis_not_subsidized_ids)
     create_amadeus_id_csv(amadeus_not_subsidized,amadeus_not_subsidized_ids)
@@ -93,7 +86,9 @@ def complete_workflow(continue_from_backup=True):
     all_ids_df=pd.read_csv("id/all_ids.csv")
     fetch_all(connection,database="amadeus",id_df=all_ids_df) #mit all_ids und treatment columns
     fetch_all(connection,database="orbis",id_df=all_ids_df)
-    append_treatment_to_sql_data()
+    drop_observations
+    treatment
+    #append_treatment_to_sql_data()
 
 complete_workflow(continue_from_backup=True)
 
