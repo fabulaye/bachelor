@@ -158,14 +158,17 @@ def treatment_workflow():
     all_subsidized_ids=pd.read_csv("id/all_subsidized_ids.csv",index_col=False)
     bmwi_request=pd.read_csv("bmwi_request.csv")
     bmwi_request=bmwi_request[["Zuwendungsempfänger","Fördersumme in EUR","Laufzeit von","Laufzeit bis","project_id",]]
-    bmwi_request_with_ids=pd.merge(bmwi_request,all_subsidized_ids,left_on="Zuwendungsempfänger",right_on="name",how="outer") 
+    bmwi_request_with_ids=pd.merge(bmwi_request,all_subsidized_ids,left_on="Zuwendungsempfänger",right_on="name",how="left") #wir verlieren hier 11 datenpunkte
     #financials=pd.read_csv("financialsbvd_ama.csv")
+    bmwi_request_with_ids.to_excel("bmwi_request_debug.xlsx")
+    print(sum(bmwi_request_with_ids["Zuwendungsempfänger"].isna()))
     bmwi_request_with_ids=calculate_years(bmwi_request_with_ids)    
-    df=calculate_annual_subsidy(df)
+    bmwi_request_with_ids=calculate_annual_subsidy(bmwi_request_with_ids)
     chdir_sql_requests()
     financials=pd.read_csv("financialsbvd_ama_imputed.csv",index_col=False) 
-    new_test=merge_financials_and_concurrent_treatment(financials,all_subsidized_ids,treatment_with_id)#hier verlieren wir die namen
-    new_test.to_csv("treatmentfinancialsbvd_ama.csv",index=False)
+    #new_test=merge_financials_and_concurrent_treatment(financials,all_subsidized_ids,treatment_with_id)#hier verlieren wir die namen
+    new_test=pd.merge(financials,bmwi_request_with_ids,left_on=["bvdid","closdate_year"],right_on=["bvdid","year"],how="left")
+    #new_test.to_csv("treatmentfinancialsbvd_ama.csv",index=False)
     df=handle_parallel_projects(new_test)
     df=fill_not_treated_data(df)
     df=clean_final_df(df)
