@@ -2,7 +2,7 @@ import wrds
 import regex as re
 import pandas as pd
 import os
-from orbis_amadeus_request import amadeus_request,orbis_request,orbis_exact_request,orbis_combination_request,amadeus_exact_request
+from bachelor.requests.orbis_amadeus_request import amadeus_request,orbis_request,orbis_exact_request,orbis_combination_request,amadeus_exact_request
 from datahandling.json_to_dict import json_to_dict
 from manipulation.my_list import upper_list
 from datahandling.change_directory import chdir_data
@@ -40,7 +40,7 @@ def continue_with_list(company_names,backup):
     new_list=company_names[company_names_index:]
     return new_list
     
-from build_ids import combine_ids_unique
+from bachelor.requests.build_ids import combine_ids_unique
 #
 def create_in_mask(iterable1, iterable2, case_sensitive=True):
 

@@ -1,4 +1,4 @@
-from project_builder import project_builder
+from bachelor.archived.project_builder import project_builder
 
 class company():
     def __init__(self) -> None:
@@ -21,7 +21,7 @@ class company_builder():
     def get_company(self):
         return self.company 
 
-from project_builder import subsidized_project_builder
+from bachelor.archived.project_builder import subsidized_project_builder
 
 class subsidized_company_builder(company_builder):
     def __init__(self) -> None:

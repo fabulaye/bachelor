@@ -1,16 +1,16 @@
-from clean_bmwi_request import clean_bmwi_request
-from sql_request import start_orbis_request,start_amadeus_request
+from bachelor.requests.clean_bmwi_request import clean_bmwi_request
+from bachelor.requests.sql_request import start_orbis_request,start_amadeus_request
 import pandas as pd
-from filter_wrong_companies import create_amadeus_filtered,create_orbis_filtered,filter_game_ev_members
-from build_ids import create_amadeus_id_csv,create_orbis_id_csv,create_all_id_csv,combine_ids_unique
-from id_sql_requests import fetch_all
+from bachelor.requests.filter_wrong_companies import create_amadeus_filtered,create_orbis_filtered,filter_game_ev_members
+from bachelor.requests.build_ids import create_amadeus_id_csv,create_orbis_id_csv,create_all_id_csv,combine_ids_unique
+from bachelor.requests.id_sql_requests import fetch_all
 from append_treatment_to_data import append_treatment_to_sql_data
 from split_test_and_control_sets import create_amadeus_control_csv,create_orbis_control_csv
 from load_config import orbis_backup,amadeus_backup,orbis_subsidized,amadeus_subsidized,amadeus_not_subsidized,orbis_not_subsidized,orbis_subsidized_filtered,amadeus_subsidized_filtered,orbis_game_ev_filtered,amadeus_game_ev_filtered,orbis_not_subsidized_ids,amadeus_not_subsidized_ids,orbis_subsidized_ids,amadeus_subsidized_ids
 from datahandling.change_directory import chdir_data
 from wrds_connection import start_connection
 from split_game_ev_members import split_game_ev_members
-from game_ev_request import game_ev_request
+from bachelor.requests.game_ev_request import game_ev_request
 
 
 
@@ -87,6 +87,7 @@ def complete_workflow(continue_from_backup=True):
     fetch_all(connection,database="amadeus",id_df=all_ids_df) #mit all_ids und treatment columns
     fetch_all(connection,database="orbis",id_df=all_ids_df)
     drop_observations
+    imputation
     treatment
     #append_treatment_to_sql_data()
 

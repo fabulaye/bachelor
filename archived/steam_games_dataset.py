@@ -1,6 +1,6 @@
 import pandas as pd
 import wrds
-from orbis_amadeus_request import orbis_request,amadeus_request
+from bachelor.requests.orbis_amadeus_request import orbis_request,amadeus_request
 import os
 
 games_dataset=pd.read_csv("C:/Users/lukas/Desktop/bachelor/data/games.csv")
