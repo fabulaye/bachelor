@@ -5,20 +5,20 @@ from sklearn.metrics import mean_absolute_error
 from datahandling.change_directory import chdir_sql_requests
 from cleaning.drop_column_with_na import drop_nan_columns
 from sklearn.preprocessing import StandardScaler
-from machine_learning.
+from machine_learning.imputation_validation import repeat_validation
 
-def return_bad_imputations(metric_df):
-    metric_df_agg=metric_df.agg("mean").sort_values()
-    bad_imputations=metric_df_agg[metric_df_agg>=0.5]
-    return bad_imputations
 
 chdir_sql_requests()
 financials=pd.read_csv("financialsbvd_ama.csv",index_col=False)
 years=financials["closdate_year"]
 
-imputer=KNNImputer(n_neighbors=5)
-
-mae_df_mean_multiple=optimize_n_neighnors([2,10])
+imputer=KNNImputer(n_neighbors=3)
+mae_df,df=repeat_validation(financials,imputer,5,)
+bad_imputations=return_bad_imputations(mae_df,0.3)
+print(bad_imputations)
+bad_columns=bad_imputations.index
+print(bad_columns)
+#mae_df_mean_multiple=optimize_n_neighnors([2,10])
 
 
 

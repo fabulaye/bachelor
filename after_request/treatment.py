@@ -2,11 +2,35 @@ from datahandling.change_directory import chdir_data,chdir_sql_requests
 import pandas as pd
 
 from datetime import datetime
-
+from cleaning.format_dates import calculate_months_between,get_months,get_year
 from exploration.count_nans import count_nan
 import pandas as pd
 from datahandling.change_directory import chdir_sql_requests
 
+from datetime import datetime
+
+def calculate_months_between(d1, d2):
+    date_format = "%d.%m.%Y"
+    start_date = datetime.strptime(d1, date_format)
+    end_date = datetime.strptime(d2, date_format)
+
+    # Calculate the number of months between the two dates
+    months = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
+    return months
+
+def get_months(date):
+    date_format = "%d.%m.%Y"
+    date=datetime.strptime(date,date_format)
+    months=date.month
+    return months
+
+def get_year(date,date_format="%d.%m.%Y"):
+    date=str(date)
+    date=datetime.strptime(date,date_format)
+    year=date.year
+    year=int(year)
+    
+    return year
 
 def analyze_dataframes(*dfs):
     for i,df in enumerate(dfs):
@@ -123,7 +147,7 @@ def clean_final_df(df):
     df=drop_unnamed_columns(df)
     return df
 
-def treatment_workflow():
+def treatment_workflow(sql_df):
     chdir_sql_requests()
     df=pd.read_csv("treatmentfinancialsbvd_ama.csv")
     chdir_data()
@@ -137,9 +161,9 @@ def treatment_workflow():
     bmwi_request_with_ids=calculate_years(bmwi_request_with_ids)    
     bmwi_request_with_ids=calculate_annual_subsidy(bmwi_request_with_ids)
     chdir_sql_requests()
-    financials=pd.read_csv("financialsbvd_ama_imputed.csv",index_col=False) 
+    #sql_df=pd.read_csv("financialsbvd_ama_imputed.csv",index_col=False) 
     #new_test=merge_financials_and_concurrent_treatment(financials,all_subsidized_ids,treatment_with_id)#hier verlieren wir die namen
-    new_test=pd.merge(financials,bmwi_request_with_ids,left_on=["bvdid","closdate_year"],right_on=["bvdid","year"],how="left")
+    new_test=pd.merge(sql_df,bmwi_request_with_ids,left_on=["bvdid","closdate_year"],right_on=["bvdid","year"],how="left")
     #new_test.to_csv("treatmentfinancialsbvd_ama.csv",index=False)
     df=handle_parallel_projects(new_test)
     df=fill_not_treated_data(df)
@@ -147,4 +171,8 @@ def treatment_workflow():
     df.to_csv("treatmentfinancialsbvd_ama.csv",index=False)
     df.to_excel("treatmentfinancialsbvd_ama.xlsx",index=False)
 
-treatment_workflow()
+
+chdir_sql_requests()
+ama_financials_knn_imputation=pd.read_excel("knn_imputation_ama_financials.xlsx")
+ama_financials_knn_imputation.rename(columns={"idnr":"bvdid"},inplace=True)
+treatment_workflow(ama_financials_knn_imputation)

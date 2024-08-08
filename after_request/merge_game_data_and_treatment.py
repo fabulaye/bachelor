@@ -3,8 +3,8 @@ import pandas as pd
 
 chdir_data()
 
-game_data=pd.read_csv("games_data_mobygames_steam_merged.csv")
-treatment_data=pd.read_csv("sql_data/treatmentfinancialsbvd_ama.csv")
+game_data=pd.read_csv("games_data_mobygames_steam_merged.csv",index_col=False)
+treatment_data=pd.read_csv("sql_data/treatmentfinancialsbvd_ama.csv",index_col=False)
 
 merged_df=pd.merge(treatment_data,game_data,how="left",left_on=["closdate_year","bvdid"],right_on=["year","bvdid"])
 
@@ -78,9 +78,7 @@ new_columns=["review_percentage_mean","review_count_mean","score_mean","rank_mea
 merged_df=forward_fill_columns(merged_df,new_columns)
 
 
-
-
-merged_df.to_excel("treatment_and_game_data.xlsx")
+merged_df.to_excel("treatmentfinancialsbvd_ama.xlsx")
 
 
 #def add_sum_cols():

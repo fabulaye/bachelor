@@ -11,6 +11,8 @@ from datahandling.change_directory import chdir_data
 from wrds_connection import start_connection
 from split_game_ev_members import split_game_ev_members
 from bachelor.requests.game_ev_request import game_ev_request
+from bachelor.imputation.knn_imputation import impute_amadeus
+from bachelor.after_request.treatment import treatment_workflow
 
 
 
@@ -86,9 +88,13 @@ def complete_workflow(continue_from_backup=True):
     all_ids_df=pd.read_csv("id/all_ids.csv")
     fetch_all(connection,database="amadeus",id_df=all_ids_df) #mit all_ids und treatment columns
     fetch_all(connection,database="orbis",id_df=all_ids_df)
-    drop_observations
-    imputation
-    treatment
+    impute_amadeus()
+    treatment_workflow()
+    estimate_earnings
+    merge_mobygames_and_steam_data
+    merge_game_data_and_treatment
+    filter_companies_by_num_reports
+
     #append_treatment_to_sql_data()
 
 complete_workflow(continue_from_backup=True)

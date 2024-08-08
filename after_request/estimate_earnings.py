@@ -21,7 +21,9 @@ def estimate_earnings():
         group_data["earnings"]=earnings_list
         data_list.append(group_data)
     new_data=pd.concat(data_list)
+    new_data
     return new_data
 
 test=estimate_earnings()
-test.to_excel("earnings_estimate.xlsx")
+test.to_excel("treatmentfinancialsbvd_ama.xlsx")
+test.to_csv("treatmentfinancialsbvd_ama.csv")
