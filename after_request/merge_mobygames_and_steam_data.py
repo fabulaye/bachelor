@@ -11,7 +11,7 @@ def strip_moby(id_string):
     except: 
         None
     return id
-games_data_steam=pd.read_csv("games_data_steam.csv")
+games_data_steam=pd.read_csv("games_data_steam.csv",index_col=False)
 games_data_steam["moby_id"]=games_data_steam["moby_id"].apply(lambda x: strip_moby(x))
 games_data_mobygames=pd.read_csv("games_data.csv")
 games_data_mobygames["moby_id"]=games_data_mobygames["moby_id"].apply(lambda x: strip_moby(x))
@@ -31,7 +31,7 @@ def get_year(date,date_formats=("%d.%m.%Y")):
 
 merged_df["year"]=merged_df["release_date"].apply(lambda x: get_year(x,("%B %d, %Y","%Y")))
 
-merged_df.to_csv("games_data_mobygames_steam_merged.csv")
+merged_df.to_csv("games_data_mobygames_steam_merged.csv",index=False)
 
 
 

@@ -6,7 +6,6 @@ class project():
         self.release_date=None
         self.released=None
         self.subsidy=None
-        self.subsidized=None
         self.subsidy_start=None
         self.subsidy_end=None
     def __str__(self) -> str:
@@ -34,8 +33,6 @@ class project_builder():
     def get_project(self):
         return self.project
     
-
-
 class subsidized_project_builder(project_builder):
     def __init__(self) -> None:
         super().__init__()

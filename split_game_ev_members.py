@@ -1,6 +1,6 @@
 import pandas as pd
 from datahandling.change_directory import chdir_data
-from return_rechtsform import strip_rechtsform_list,return_rechtsform,filter_companies_with_rechtsform
+from lukasdata.cleaning.return_rechtsform import strip_rechtsform_list,return_rechtsform,filter_companies_with_rechtsform
 
 def split_game_ev_members():
     chdir_data()

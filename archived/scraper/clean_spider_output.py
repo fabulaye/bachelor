@@ -1,7 +1,7 @@
 import regex as re
 import pandas as pd
 from datahandler.change_directory import chdir_data
-from return_rechtsform import return_rechtsform,strip_rechtsform
+from lukasdata.cleaning.return_rechtsform import return_rechtsform,strip_rechtsform
 from my_strip import my_rstrip
 
 

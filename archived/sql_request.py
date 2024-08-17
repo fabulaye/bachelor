@@ -2,7 +2,7 @@ import wrds
 import regex as re
 import pandas as pd
 import os
-from bachelor.requests.orbis_amadeus_request import amadeus_request,orbis_request,orbis_exact_request,orbis_combination_request,amadeus_exact_request
+from sql_requests.orbis_amadeus_request import amadeus_like_request,orbis_like_request,orbis_exact_request,orbis_combination_request,amadeus_exact_request,general_request
 from datahandling.json_to_dict import json_to_dict
 from manipulation.my_list import upper_list
 from datahandling.change_directory import chdir_data
@@ -12,19 +12,6 @@ import numpy as np
 
 
 chdir_data()
-
-
-def capitalize_names(company_names):
-    names=[]
-    for name in company_names:
-        try:
-            name=name.upper()
-            names.append(name)
-        except:
-            print(name)
-    names=tuple(names)
-    return names
-
 
 def delete_names(lst,to_be_deleted):
     for item in to_be_deleted:
@@ -40,7 +27,7 @@ def continue_with_list(company_names,backup):
     new_list=company_names[company_names_index:]
     return new_list
     
-from bachelor.requests.build_ids import combine_ids_unique
+from sql_requests.build_ids import combine_ids_unique
 #
 def create_in_mask(iterable1, iterable2, case_sensitive=True):
 
@@ -65,8 +52,7 @@ def create_in_mask(iterable1, iterable2, case_sensitive=True):
 
 import csv
 
-def start_orbis_request(gaming_company_names,backup_name,output_file_name,connection,request_type="exact",continue_from_backup=False,skip_df_name=None,*args):
-    chdir_data()
+def start_orbis_request(gaming_company_names,backup_name,output_file_name,connection,request_type="exact",continue_from_backup=False,path=None,*args):
     if continue_from_backup:
         try:
             orbis_save=pd.read_csv(backup_name)["name_native"].to_list()
@@ -81,11 +67,6 @@ def start_orbis_request(gaming_company_names,backup_name,output_file_name,connec
                 #writer.writeheader()
             #orbis_save=pd.read_csv(backup_name)["name_native"].to_list()
             pass
-    if skip_df_name!=None:
-        skip_df=pd.read_csv(skip_df_name)
-        mask=create_in_mask(gaming_company_names,skip_df["name_nat"],case_sensitive=False) #wir nehmen die namen vom anderen dataset 
-        reverse_mask=[not x for x in mask]
-        gaming_company_names=gaming_company_names[reverse_mask]
     cap_names_tuple=tuple(capitalize_names(gaming_company_names))
     if request_type=="exact":
         orbis_request_df=orbis_exact_request(connection,cap_names_tuple,output_file_name,backup_name,continue_from_backup=continue_from_backup)
@@ -94,35 +75,20 @@ def start_orbis_request(gaming_company_names,backup_name,output_file_name,connec
         orbis_request_df=orbis_combination_request(connection,cap_names_tuple,backup_name,output_file_name,backup_name,continue_from_backup=continue_from_backup)
         return orbis_request_df
     if request_type=="like":
-        orbis_request_df=orbis_request(connection,cap_names_tuple,backup_name,output_file_name,continue_from_backup=continue_from_backup)
+        orbis_request_df=orbis_like_request(connection,cap_names_tuple,backup_name,output_file_name,continue_from_backup=continue_from_backup,path=path)
         return orbis_request_df
     
 
-def start_amadeus_request(gaming_company_names,backup_name,output_file_name,connection,request_type="exact",continue_from_backup=False,skip_df_name=None,*args):
-    os.chdir("C:/Users/Lukas/Desktop/bachelor/data")
-    if continue_from_backup:
+def start_request(connection,gaming_company_names,output_file_name,search_params,path=None,backup_name=None):
+    if backup_name!=None:
         amadeus_save=pd.read_csv(backup_name)["name_nat"].to_list()
         amadeus_save=upper_list(amadeus_save)
         gaming_company_names=upper_list(gaming_company_names)
         gaming_company_names=continue_with_list(gaming_company_names,amadeus_save)
     cap_names_tuple=tuple(capitalize_names(gaming_company_names))
-    if skip_df_name!=None:
-        skip_df=pd.read_csv(skip_df_name)
-        mask=create_in_mask(gaming_company_names,skip_df["name_native"],case_sensitive=False)
-        reverse_mask=[not x for x in mask]
-        gaming_company_names_numpy=np.array(gaming_company_names)
-        gaming_company_names=gaming_company_names_numpy[reverse_mask]
-        #gaming_company_names=gaming_company_names[reverse_mask]
-    if request_type=="exact":
-        amadeus_request_df=amadeus_exact_request(connection,cap_names_tuple,output_file_name,backup_name,continue_from_backup=continue_from_backup)
-        return amadeus_request_df
-    #if request_type=="combination":
-        #amadeus_request_df=amadeus_combination_request(connection,cap_names_tuple,backup_name,output_file_name)
-        #amadeus_request_df.to_csv("amadeus_combination_backup.csv")
-    if request_type=="like":
-        amadeus_request_df=amadeus_request(connection,cap_names_tuple,output_file_name,backup_name,continue_from_backup=continue_from_backup)
-        return amadeus_request_df
-
+    df=general_request(connection,cap_names_tuple,output_file_name,search_params=search_params)
+    return df
+    
 
 #orbis_missing=pd.read_csv("orbis_missing.csv")["name"]
 

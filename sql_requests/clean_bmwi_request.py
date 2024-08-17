@@ -1,12 +1,14 @@
 import pandas as pd
 import os
-from return_rechtsform import return_rechtsform
+from cleaning.return_rechtsform import return_rechtsform
+import sys
+#sys.path.append(r'E:\virtual_environments\gaming_venv\Lib\site-packages\wrds')
+
+from cleaning.my_strip import my_rstrip
+#from lukasdata.cleaning.my_strip import my_rstrip
 from cleaning.my_strip import my_rstrip
 import regex as re
-from cleaning.my_strip import my_rstrip
 from datahandling.change_directory import chdir_data
-
-chdir_data()
 
 def delete_equal(query):
     column_names=query.columns
@@ -26,6 +28,7 @@ def delete_equal(query):
     return query
 
 
+
 def split_name_and_rechtsform(query):
     rechtsform_list=[]
     name_list=[]
@@ -39,8 +42,10 @@ def split_name_and_rechtsform(query):
     return query
 
 
-def clean_bmwi_request():
+def clean_bmwi_request(path=None):
     chdir_data()
+    if path!=None:
+        os.chdir(path)
     query=pd.read_csv("Suchliste_utf8.csv",delimiter=";",encoding="utf-8")
     delete_equal(query)
     column_indeces=[5,6,7,8,9,17,20,21,22]
@@ -48,8 +53,8 @@ def clean_bmwi_request():
     my_df=split_name_and_rechtsform(my_df)
     my_df["project_id"]=range(len(my_df))
     print(my_df)
+    my_df=my_df[my_df["Zuwendungsempfänger"]!="Keine Anzeige aufgrund datenschutzrechtlicher Regelungen."]
     my_df.to_csv("bmwi_request.csv",index=False)
-
 
 
 
