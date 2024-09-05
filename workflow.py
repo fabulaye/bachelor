@@ -8,12 +8,14 @@ from append_treatment_to_data import append_treatment_to_sql_data
 from split_test_and_control_sets import create_amadeus_control_csv,create_orbis_control_csv
 from load_config import orbis_backup,amadeus_backup,orbis_subsidized,amadeus_subsidized,amadeus_not_subsidized,orbis_not_subsidized,orbis_subsidized_filtered,amadeus_subsidized_filtered,orbis_game_ev_filtered,amadeus_game_ev_filtered,orbis_not_subsidized_ids,amadeus_not_subsidized_ids,orbis_subsidized_ids,amadeus_subsidized_ids
 from datahandling.change_directory import chdir_data
-from wrds_connection import start_connection
-from split_game_ev_members import split_game_ev_members
+from bachelor.sql_requests.wrds_connection import start_connection
+from bachelor.archived.split_game_ev_members import split_game_ev_members
 from bachelor.requests.game_ev_request import game_ev_request
 from bachelor.imputation.knn_imputation import impute_amadeus
 from bachelor.after_request.treatment import treatment_workflow
 from manipulation.my_list import list_difference
+from complete_search import complete_search
+from bachelor.objects_and_builders.request_builder import id_request
 
 
 
@@ -52,46 +54,8 @@ class search_list(list):
             names=list(df["name_nat"])
         self.append(names)
 
-def test_variables_workflow(create_id_csv=True,get_data=True,exact_search=True,like_search=True,complete_search=False):
-    #catch_all_names: 1. exact_search,2. create_diff_list,3. like_search_with_diff_list
-    if create_id_csv:
-        gaming_company_names_subsidized=pd.read_csv("bmwi_request.csv")["Zuwendungsempfänger"].to_list()
-        #gaming_company_names_subsidized=replace_umlaut(gaming_company_names_subsidized)
-        os.chdir("C:/Users/lukas/Desktop/bachelor/data/complete_search")
-        if complete_search:
-            found=search_list()
-            not_found=search_list(gaming_company_names_subsidized)
-            
-            start_orbis_request(gaming_company_names_subsidized,orbis_backup,"orbis_exact_search_incomplete",connection)
-            found.append_from_csv("orbis_exact_search_incomplete.csv")
-            not_found=list_difference(not_found,found)
 
-            start_amadeus_request(not_found,amadeus_backup,"amadeus_exact_search_incomplete",connection,continue_from_backup=False)
-            found.append_from_csv("amadeus_exact_search_incomplete.csv")
-            not_found=list_difference(not_found,found)
-
-            start_orbis_request(not_found,orbis_backup,"like_request_orbis_subsidized",connection,request_type="like",skip_df_name=orbis_subsidized)
-            found.append_from_csv("like_request_orbis_subsidized.csv")
-            not_found=list_difference(not_found,found)
-
-            start_amadeus_request(not_found,amadeus_backup,"like_request_amadeus_subsidized",connection,request_type="like",skip_df_name=orbis_subsidized)
-            found.append_from_csv("like_request_amadeus_subsidized.csv")
-            not_found=list_difference(not_found,found)
-
-        elif exact_search==True:
-            start_orbis_request(gaming_company_names_subsidized,orbis_backup,orbis_subsidized,connection)
-            start_amadeus_request(gaming_company_names_subsidized,amadeus_backup,amadeus_subsidized,connection,continue_from_backup=True)
-        elif like_search==True:
-            start_orbis_request(gaming_company_names_subsidized,orbis_backup,"like_request_orbis_subsidized",connection,request_type="like",skip_df_name=orbis_subsidized)
-            start_amadeus_request(gaming_company_names_subsidized,amadeus_backup,"like_request_orbis_subsidized",connection,request_type="like",skip_df_name=orbis_subsidized)
-            #checken welche nicht drin sind und dann like request machen
         
-        create_orbis_filtered()
-        create_amadeus_filtered()
-        create_orbis_id_csv(orbis_subsidized_filtered,orbis_subsidized_ids)
-        create_amadeus_id_csv(amadeus_subsidized_filtered,amadeus_subsidized_ids)
-        
-
  
 #data_merge?
 #control_variables:
@@ -121,15 +85,16 @@ def control_variables_workflow(continue_from_backup=False,reset=False,):
 
 def complete_workflow(continue_from_backup=True):
     bmwi_workflow()
-    test_variables_workflow(exact_search=False,like_search=False)
-    complete_search
+    complete_search()
     control_variables_workflow(continue_from_backup=continue_from_backup)
-    create_all_id_csv()
     chdir_data()
     all_ids_df=pd.read_csv("id/all_ids.csv")
-    fetch_all(connection,database="amadeus",id_df=all_ids_df) #mit all_ids und treatment columns
-    fetch_all(connection,database="orbis",id_df=all_ids_df)
+    id_request(connection,"orbis",all_ids_df) #ist df spezifik
+    id_request(connection,"amadeus",all_ids_df)
+    #filtern und company objects
+    #bachelor_db create tables for sql
     impute_amadeus()
+    impute 
     treatment_workflow()
     estimate_earnings
     merge_mobygames_and_steam_data

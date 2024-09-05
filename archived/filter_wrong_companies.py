@@ -6,9 +6,6 @@ from load_config import amadeus_not_subsidized,amadeus_subsidized_filtered,orbis
 from datahandling.change_directory import chdir_data
 
 
-
-
-
 def filter_correct_companies_amadeus(amadeus_request,bmwi_request):
     chdir_data()
     names=[]
