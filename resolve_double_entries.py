@@ -63,7 +63,7 @@ def resolve_conflict(df):
 #replace nan placeholder
 resolved_rows=resolve_conflict(financial_duplicates)
 financials_resolved=pd.concat([financial_unique,resolved_rows])
-
+financials_resolved.replace("nan_placeholder",None,inplace=True)
 financials_resolved.to_excel("financials_resolved.xlsx")
 print(financials_resolved.index)
 

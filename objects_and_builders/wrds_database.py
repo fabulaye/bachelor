@@ -2,6 +2,7 @@ import importlib.util
 import sys
 import os
 import pandas as pd
+from datahandling.change_directory import chdir_sql_requests
 
 def import_module_from_path(module_name, file_path):
     # Ensure the file exists
@@ -73,38 +74,40 @@ amadeus_sizes=["small","medium","large","verylarge"]
 from request_builder import amadeus_request,orbis_request,wrds_request,request_builder
 
 class wrds_database():
-    def __init__(self,tables,sizes,connection):
+    def __init__(self,tables,sizes,connection,path=None):
         self.connection=connection
         self.tables=tables
         self.sizes=sizes
         self.request_object=None #if orbis then
         self.request_builder=request_builder()
-    def id_requests(self,ids):
+        self.path=path
+        self.names=None
+    def request(self,how,ids=None,names=None):
+        if self.path!=None:
+            os.chdir(self.path)
+        else:
+            chdir_sql_requests()
         for table in self.tables:
             if isinstance(self,orbis_database):
-                self.request_object=self.request_builder.build_orbis(connection)   
+                self.request_object=self.request_builder.build_orbis(self.connection)   
             elif isinstance(self,amadeus_database):
-                self.request_object=self.request_builder.build_amadeus(connection)
+                self.request_object=self.request_builder.build_amadeus(self.connection)
             #müssen wir das request_object austauschen? neues initialisieren
             self.request_object.ids=ids
             self.request_object.sizes=self.sizes
             self.request_object.table_name=table
-            self.request_object.id_request(self.connection) #parameter für id oder so in der functiion oder seperate functions?
-    def general_requests():
-        None
+            if how=="id":
+                self.request_object.id_request(self.connection)
+            elif how=="general":
+                self.request_object.names_tuple=tuple(names)
+                self.request_object.general_request(self.connection)#parameter für id oder so in der functiion oder seperate functions?
+    
         
-
-
-
 class amadeus_database(wrds_database):
     def __init__(self,tables,sizes,connection):
         super().__init__(tables,sizes,connection)
         #use build request to pass size,etc.
         #self.request_object=self.request_builder.build_amadeus(connection)
-    def id_requests(self, ids):
-        #self.request_object=self.request_builder.build_amadeus(connection)
-        return super().id_requests(ids)
-
 
 
 class orbis_database(wrds_database):
@@ -112,15 +115,13 @@ class orbis_database(wrds_database):
         super().__init__(tables,sizes,connection)
         #use build request to pass size,etc.
         #self.request_object=self.request_builder.build_orbis(connection)
-    def id_requests(self, ids):
-       # self.request_object=self.request_builder.build_orbis(connection) #ich kann hier nicht bauen weil ich im id requests loop bleibe das heißt loop muss hier gebaut werden
-        return super().id_requests(ids)
+
 
 #########
-ids=tuple(pd.read_csv(r"C:\Users\lukas\Desktop\bachelor\data\id\all_treatment_ids.csv")["bvdid"].to_list())
-#das hier teil der objekte machen
-connection=wrds_connection.start_connection()
-#orbis=orbis_database(orbis_tables,orbis_sizes,connection)
-#orbis.id_requests(ids)
-amadeus=amadeus_database(amadeus_tables,amadeus_sizes,connection)
-amadeus.id_requests(ids)
+
+def full_workflow(how,path=None,ids=None,names=None):
+    connection=wrds_connection.start_connection()
+    orbis=orbis_database(orbis_tables,orbis_sizes,connection,path)
+    orbis.request(how=how,ids=ids,names=names)
+    amadeus=amadeus_database(amadeus_tables,amadeus_sizes,connection,path)
+    amadeus.request(how=how,ids=ids,names=names)

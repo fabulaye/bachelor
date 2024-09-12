@@ -29,7 +29,6 @@ def get_year(date,date_format="%d.%m.%Y"):
     date=datetime.strptime(date,date_format)
     year=date.year
     year=int(year)
-    
     return year
 
 def analyze_dataframes(*dfs):
@@ -38,7 +37,6 @@ def analyze_dataframes(*dfs):
     for df in dfs:
         df_nans=count_nan(df)
         print(df_nans)
-
 
 def german_to_us_numbers(german_number):
     us_number=german_number.replace(".","").replace(",",".")

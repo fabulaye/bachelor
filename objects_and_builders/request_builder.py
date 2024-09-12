@@ -64,7 +64,7 @@ class wrds_request():
                 self._df.to_csv(output_file_name)  
         return self
     def id_request(self,connection):
-        chdir_sql_requests()
+        #chdir_sql_requests()
         for size_long in self.sizes:
             if type(self)==orbis_request:
                 self.table=self.table_builder.build_orbis()

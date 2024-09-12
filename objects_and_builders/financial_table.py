@@ -1,3 +1,4 @@
+
 import pandas as pd
 #from lukasdata import import_manager
 from datahandling.change_directory import chdir_data
@@ -10,8 +11,6 @@ var_map=json_to_dict("map.json")
 
 chdir_sql_requests()
 financial_tables=["ob_cflow_non_us_ind_eur_intbvd_orbis","ob_cflow_non_us_ind_eurbvd_orbis","ob_cflow_us_ind_eurbvd_orbis","ob_detailed_fmt_ind_eurbvd_orbis","ob_detailed_fmt_ind_eur_intbvd_orbis","ob_ind_g_fins_eur_intbvd_orbis","ob_ind_g_fins_eurbvd_orbis","ob_key_financials_eurbvd_orbis","financialsbvd_ama","ish_duo_guobvd_ama"]
-
-
 
 
 #cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")

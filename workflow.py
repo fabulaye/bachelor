@@ -8,14 +8,11 @@ from append_treatment_to_data import append_treatment_to_sql_data
 from split_test_and_control_sets import create_amadeus_control_csv,create_orbis_control_csv
 from load_config import orbis_backup,amadeus_backup,orbis_subsidized,amadeus_subsidized,amadeus_not_subsidized,orbis_not_subsidized,orbis_subsidized_filtered,amadeus_subsidized_filtered,orbis_game_ev_filtered,amadeus_game_ev_filtered,orbis_not_subsidized_ids,amadeus_not_subsidized_ids,orbis_subsidized_ids,amadeus_subsidized_ids
 from datahandling.change_directory import chdir_data
-from bachelor.sql_requests.wrds_connection import start_connection
-from bachelor.archived.split_game_ev_members import split_game_ev_members
+from wrds_connection import start_connection
+from split_game_ev_members import split_game_ev_members
 from bachelor.requests.game_ev_request import game_ev_request
 from bachelor.imputation.knn_imputation import impute_amadeus
 from bachelor.after_request.treatment import treatment_workflow
-from manipulation.my_list import list_difference
-from complete_search import complete_search
-from bachelor.objects_and_builders.request_builder import id_request
 
 
 
@@ -38,24 +35,23 @@ def game_ev_workflow(html_request=False,continue_from_backup=False,exact_search=
         start_amadeus_request(game_ev_members_no_rechtsform,"game_ev_members_no_rechtsform_amadeus_backup.csv","game_ev_members_amadeus.csv_no_rechtsform",connection,"like",continue_from_backup=continue_from_backup,skip_df_name="game_ev_members_no_rechtsform_amadeus_backup.csv")
     #haftungsbeschränkt fehlt
 
-class search_list(list):
-    def __init__(self,*kwargs):
-        super().__init__(args)
-        for key,value in kwargs.items():
-            if key=="filename":
-                self.filename=value
-    def to_csv(self):
-        list_series=pd.Series(self).to_csv(self.filename)
-    def append_from_csv(self,filename):
-        df=pd.read_csv(filename)
-        try:
-            names=list(df["name_native"])
-        except:
-            names=list(df["name_nat"])
-        self.append(names)
-
-
+def test_variables_workflow(create_id_csv=True,get_data=True,exact_search=True,like_search=True):
+    if create_id_csv:
+        gaming_company_names_subsidized=pd.read_csv("bmwi_request.csv")["Zuwendungsempfänger"].to_list()
+        #gaming_company_names_subsidized=replace_umlaut(gaming_company_names_subsidized)
+        if exact_search==True:
+            start_orbis_request(gaming_company_names_subsidized,orbis_backup,orbis_subsidized,connection)
+            start_amadeus_request(gaming_company_names_subsidized,amadeus_backup,amadeus_subsidized,connection,continue_from_backup=True)
+        if like_search==True:
+            start_orbis_request(gaming_company_names_subsidized,orbis_backup,"like_request_orbis_subsidized",connection,request_type="like",skip_df_name=orbis_subsidized)
+            start_amadeus_request(gaming_company_names_subsidized,amadeus_backup,"like_request_orbis_subsidized",connection,request_type="like",skip_df_name=orbis_subsidized)
+            #checken welche nicht drin sind und dann like request machen
+        create_orbis_filtered()
+        create_amadeus_filtered()
+        create_orbis_id_csv(orbis_subsidized_filtered,orbis_subsidized_ids)
+        create_amadeus_id_csv(amadeus_subsidized_filtered,amadeus_subsidized_ids)
         
+    
  
 #data_merge?
 #control_variables:
@@ -85,25 +81,25 @@ def control_variables_workflow(continue_from_backup=False,reset=False,):
 
 def complete_workflow(continue_from_backup=True):
     bmwi_workflow()
-    complete_search()
+    test_variables_workflow(exact_search=False,like_search=False)
     control_variables_workflow(continue_from_backup=continue_from_backup)
+    create_all_id_csv()
     chdir_data()
     all_ids_df=pd.read_csv("id/all_ids.csv")
-    id_request(connection,"orbis",all_ids_df) #ist df spezifik
-    id_request(connection,"amadeus",all_ids_df)
-    #filtern und company objects
-    #bachelor_db create tables for sql
+    fetch_all(connection,database="amadeus",id_df=all_ids_df) #mit all_ids und treatment columns
+    fetch_all(connection,database="orbis",id_df=all_ids_df)
     impute_amadeus()
-    impute 
     treatment_workflow()
+    optional:
     estimate_earnings
     merge_mobygames_and_steam_data
     merge_game_data_and_treatment
+    not optional
     filter_companies_by_num_reports
 
     #append_treatment_to_sql_data()
 
-#complete_workflow(continue_from_backup=True)
+complete_workflow(continue_from_backup=True)
 
 #like request für kontrollvariablen? Hier wissen wir ja die Rechtsform nicht, wieder für alle wiederholen?
 

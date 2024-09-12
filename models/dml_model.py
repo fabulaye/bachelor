@@ -15,7 +15,6 @@ from sklearn.preprocessing import StandardScaler
 
 scaler=StandardScaler()
 
-
 #chdir_sql_requests()
 chdir_data()
 data=pd.read_excel("treatmentfinancialsbvd_ama_filtered.xlsx")

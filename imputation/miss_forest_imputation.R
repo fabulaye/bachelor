@@ -1,0 +1,5 @@
+library("MissForest")
+library("readxls")
+df_input=read.csv("miss_forest_input.csv")
+imputed=MissForest(df_input)
+write.csv(imputed, "miss_forest_output.csv", row.names=FALSE)
