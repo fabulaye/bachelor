@@ -1,12 +1,6 @@
 import pandas as pd
 import os
 from datahandling.change_directory import chdir_data
-#from load_config import orbis_not_subsidized,amadeus_not_subsidized,orbis_subsidized_filtered,amadeus_subsidized_filtered,amadeus_not_subsidized_ids,orbis_not_subsidized_ids,amadeus_subsidized_ids,orbis_subsidized_ids
-
-#ich mache das id zeug und validierung kommt in die company structure
-
-def chdir_id():
-      os.chdir(f"C:/Users/Lukas/Desktop/bachelor/data/id")
 
 class id_dict(dict):
     def __init__(self,df) -> None:
@@ -28,6 +22,8 @@ class id_dict(dict):
             dict_to_append["names"]=csv_df["name_nat"]
         self.update(dict_to_append)
         return self
+    def get_ids(self):
+        return self["bvdid"].to_list()
     def to_csv(self,filename,drop_duplicates=True):
         os.chdir(f"C:/Users/Lukas/Desktop/bachelor/data/id")
         df=pd.DataFrame(self)
@@ -35,16 +31,6 @@ class id_dict(dict):
             df.drop_duplicates(subset=["bvdid"],inplace=True)
         df.to_csv(filename,index=False)
     
-
-
-    #treatment,drop_duplicates?,combined=combined.drop_duplicates(subset=["bvdid"])
-
-#os.chdir(r"C:\Users\lukas\Desktop\bachelor\data\complete_search")
-#data_df=pd.read_csv("like_request_orbis_subsidized.csv")
-#more_data=pd.read_csv("orbis_exact_search_incomplete.csv")
-
-#ids=id_dict(data_df)
-#ids=ids.append_ids(more_data)
 
 
 

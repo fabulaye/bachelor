@@ -1,35 +1,13 @@
-import importlib.util
-import sys
+
 import os
 import pandas as pd
-from datahandling.change_directory import chdir_sql_requests
 
-def import_module_from_path(module_name, file_path):
-    # Ensure the file exists
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: {file_path}")
-
-    # Create a module spec from the file location
-    spec = importlib.util.spec_from_file_location(module_name, file_path)
-
-    if spec is None:
-        raise ImportError(f"Cannot create a module spec for {module_name} from {file_path}")
-
-    # Create a module object from the spec
-    module = importlib.util.module_from_spec(spec)
-
-    # Add the module to sys.modules
-    sys.modules[module_name] = module
-
-    # Execute the module
-    spec.loader.exec_module(module)
-
-    return module
+from debugging.import_module_from_path import import_module_from_path
 
 
 wrds_connection=import_module_from_path("wrds_connection",r"C:\Users\lukas\Documents\GitHub\bachelor\sql_requests\wrds_connection.py")
+request_builder_module=import_module_from_path("request_builder",r"C:\Users\lukas\Documents\GitHub\bachelor\objects_and_builders\request_builder.py")
 
-#from sql_requests import wrds_connection
 
 
 
@@ -71,7 +49,7 @@ amadeus_size_dict={"small":"s","medium":"m","large":"l","verylarge":"v"}
 orbis_sizes=["small","medium","large"]
 amadeus_sizes=["small","medium","large","verylarge"]
 
-from request_builder import amadeus_request,orbis_request,wrds_request,request_builder
+
 
 class wrds_database():
     def __init__(self,tables,sizes,connection,path=None):
@@ -79,40 +57,47 @@ class wrds_database():
         self.tables=tables
         self.sizes=sizes
         self.request_object=None #if orbis then
-        self.request_builder=request_builder()
+        self.request_builder=request_builder_module.request_builder()
         self.path=path
         self.names=None
     def request(self,how,ids=None,names=None):
         if self.path!=None:
             os.chdir(self.path)
-        else:
-            chdir_sql_requests()
-        for table in self.tables:
+        if how=="general":
             if isinstance(self,orbis_database):
-                self.request_object=self.request_builder.build_orbis(self.connection)   
+                    self.request_object=self.request_builder.build_orbis(self.connection) 
+                    self.request_object.table_name="ob_contact_info"
             elif isinstance(self,amadeus_database):
-                self.request_object=self.request_builder.build_amadeus(self.connection)
-            #müssen wir das request_object austauschen? neues initialisieren
-            self.request_object.ids=ids
+                    self.request_object=self.request_builder.build_amadeus(self.connection)
+                    self.request_object.table_name="company"
             self.request_object.sizes=self.sizes
-            self.request_object.table_name=table
-            if how=="id":
-                self.request_object.id_request(self.connection)
-            elif how=="general":
-                self.request_object.names_tuple=tuple(names)
-                self.request_object.general_request(self.connection)#parameter für id oder so in der functiion oder seperate functions?
-    
+            self.request_object.set_names(names)
+            self.request_object.general_request()
+        elif how=="id":
+            for table in self.tables:
+                if isinstance(self,orbis_database):
+                    self.request_object=self.request_builder.build_orbis(self.connection)   
+                elif isinstance(self,amadeus_database):
+                    self.request_object=self.request_builder.build_amadeus(self.connection)
+                #müssen wir das request_object austauschen? neues initialisieren
+                self.request_object.ids=ids
+                self.request_object.sizes=self.sizes
+                self.request_object.table_name=table
+                if how=="id":
+                    self.request_object.id_request()
+                #parameter für id oder so in der functiion oder seperate functions?
+                
         
 class amadeus_database(wrds_database):
-    def __init__(self,tables,sizes,connection):
-        super().__init__(tables,sizes,connection)
+    def __init__(self,tables,sizes,connection,path):
+        super().__init__(tables,sizes,connection,path)
         #use build request to pass size,etc.
         #self.request_object=self.request_builder.build_amadeus(connection)
 
 
 class orbis_database(wrds_database):
-    def __init__(self,tables,sizes,connection):
-        super().__init__(tables,sizes,connection)
+    def __init__(self,tables,sizes,connection,path):
+        super().__init__(tables,sizes,connection,path)
         #use build request to pass size,etc.
         #self.request_object=self.request_builder.build_orbis(connection)
 
@@ -125,3 +110,6 @@ def full_workflow(how,path=None,ids=None,names=None):
     orbis.request(how=how,ids=ids,names=names)
     amadeus=amadeus_database(amadeus_tables,amadeus_sizes,connection,path)
     amadeus.request(how=how,ids=ids,names=names)
+
+
+

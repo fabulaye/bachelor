@@ -1,107 +1,95 @@
-from bachelor.requests.clean_bmwi_request import clean_bmwi_request
-from bachelor.requests.sql_request import start_orbis_request,start_amadeus_request
+from objects_and_builders.control_df import control_df
 import pandas as pd
-from bachelor.requests.filter_wrong_companies import create_amadeus_filtered,create_orbis_filtered,filter_game_ev_members
-from bachelor.requests.build_ids import create_amadeus_id_csv,create_orbis_id_csv,create_all_id_csv,combine_ids_unique
-from bachelor.requests.id_sql_requests import fetch_all
-from append_treatment_to_data import append_treatment_to_sql_data
-from split_test_and_control_sets import create_amadeus_control_csv,create_orbis_control_csv
-from load_config import orbis_backup,amadeus_backup,orbis_subsidized,amadeus_subsidized,amadeus_not_subsidized,orbis_not_subsidized,orbis_subsidized_filtered,amadeus_subsidized_filtered,orbis_game_ev_filtered,amadeus_game_ev_filtered,orbis_not_subsidized_ids,amadeus_not_subsidized_ids,orbis_subsidized_ids,amadeus_subsidized_ids
-from datahandling.change_directory import chdir_data
-from wrds_connection import start_connection
-from split_game_ev_members import split_game_ev_members
-from bachelor.requests.game_ev_request import game_ev_request
-from bachelor.imputation.knn_imputation import impute_amadeus
-from bachelor.after_request.treatment import treatment_workflow
-
-
-
-connection=start_connection()
-
-def bmwi_workflow():
-    clean_bmwi_request()
-
-def game_ev_workflow(html_request=False,continue_from_backup=False,exact_search=True,like_search=True):
-    if html_request==True:
-        game_ev_request()
-    split_game_ev_members()
-    game_ev_members_rechtsform=pd.read_csv("game_ev_members_rechtsform.csv")["name"]
-    if exact_search==True:
-        start_orbis_request(game_ev_members_rechtsform,"game_ev_members_rechtsform_orbis_backup.csv","game_ev_members_orbis.csv",connection,continue_from_backup=continue_from_backup) 
-        start_amadeus_request(game_ev_members_rechtsform,"game_ev_members_rechtsform_amadeus_backup.csv","game_ev_members_amadeus.csv",connection,continue_from_backup=continue_from_backup,skip_df_name="game_ev_members_rechtsform_orbis_backup.csv")
-    game_ev_members_no_rechtsform=pd.read_csv("game_ev_members_no_rechtsform.csv")["name"]
-    if like_search==True:
-        start_orbis_request(game_ev_members_no_rechtsform,"game_ev_members_no_rechtsform_orbis_backup.csv","game_ev_members_orbis_no_rechtsform.csv",connection,"like",continue_from_backup=continue_from_backup) 
-        start_amadeus_request(game_ev_members_no_rechtsform,"game_ev_members_no_rechtsform_amadeus_backup.csv","game_ev_members_amadeus.csv_no_rechtsform",connection,"like",continue_from_backup=continue_from_backup,skip_df_name="game_ev_members_no_rechtsform_amadeus_backup.csv")
-    #haftungsbeschränkt fehlt
-
-def test_variables_workflow(create_id_csv=True,get_data=True,exact_search=True,like_search=True):
-    if create_id_csv:
-        gaming_company_names_subsidized=pd.read_csv("bmwi_request.csv")["Zuwendungsempfänger"].to_list()
-        #gaming_company_names_subsidized=replace_umlaut(gaming_company_names_subsidized)
-        if exact_search==True:
-            start_orbis_request(gaming_company_names_subsidized,orbis_backup,orbis_subsidized,connection)
-            start_amadeus_request(gaming_company_names_subsidized,amadeus_backup,amadeus_subsidized,connection,continue_from_backup=True)
-        if like_search==True:
-            start_orbis_request(gaming_company_names_subsidized,orbis_backup,"like_request_orbis_subsidized",connection,request_type="like",skip_df_name=orbis_subsidized)
-            start_amadeus_request(gaming_company_names_subsidized,amadeus_backup,"like_request_orbis_subsidized",connection,request_type="like",skip_df_name=orbis_subsidized)
-            #checken welche nicht drin sind und dann like request machen
-        create_orbis_filtered()
-        create_amadeus_filtered()
-        create_orbis_id_csv(orbis_subsidized_filtered,orbis_subsidized_ids)
-        create_amadeus_id_csv(amadeus_subsidized_filtered,amadeus_subsidized_ids)
-        
-    
- 
-#data_merge?
-#control_variables:
+from objects_and_builders.id_dict import id_dict
+from imputation.miss_forest_imputation_wrapper import miss_forest_imputation_wrapper
+from merge_financial_data import financial_table_builder
 import os
-
-def control_variables_workflow(continue_from_backup=False,reset=False,):
-    chdir_data()
-    game_ev_members=pd.read_csv("game_ev_members.csv")["name"]
-    if reset==True:
-        None
-        #game_ev_request
-    else: 
-        game_ev_workflow(exact_search=False,like_search=False,continue_from_backup=continue_from_backup)
-        create_orbis_control_csv()
-        create_amadeus_control_csv()
-        filter_game_ev_members()
-        create_amadeus_control_csv()
-        create_orbis_control_csv()
-        create_amadeus_id_csv("control_variables_amadeus.csv","amadeus_control_ids.csv")
-        create_orbis_id_csv("control_variables_orbis.csv","orbis_control_ids.csv")
-        control_ids=combine_ids_unique("amadeus_control_ids.csv","orbis_control_ids.csv")
-        control_ids.to_csv("all_not_subsidized_ids.csv")
-       
-    
-    create_orbis_id_csv(orbis_not_subsidized,orbis_not_subsidized_ids)
-    create_amadeus_id_csv(amadeus_not_subsidized,amadeus_not_subsidized_ids)
-
-def complete_workflow(continue_from_backup=True):
-    bmwi_workflow()
-    test_variables_workflow(exact_search=False,like_search=False)
-    control_variables_workflow(continue_from_backup=continue_from_backup)
-    create_all_id_csv()
-    chdir_data()
-    all_ids_df=pd.read_csv("id/all_ids.csv")
-    fetch_all(connection,database="amadeus",id_df=all_ids_df) #mit all_ids und treatment columns
-    fetch_all(connection,database="orbis",id_df=all_ids_df)
-    impute_amadeus()
-    treatment_workflow()
-    optional:
-    estimate_earnings
-    merge_mobygames_and_steam_data
-    merge_game_data_and_treatment
-    not optional
-    filter_companies_by_num_reports
-
-    #append_treatment_to_sql_data()
-
-complete_workflow(continue_from_backup=True)
-
-#like request für kontrollvariablen? Hier wissen wir ja die Rechtsform nicht, wieder für alle wiederholen?
+from objects_and_builders.wrds_database import full_workflow
+from bmwi_request import clean_bmwi_request,add_id_to_bmwi_data
+from datahandling.change_directory import chdir_data
+from objects_and_builders.treatment import treatment_group_treatment_workflow,treatment_data_control_group
+#complete workflow general
+#complete workflow id
+#financials mergen
 
 
 
+#######treatment
+def treatment_workflow(bmwi_request=True,base_request=True,id_request=True,merge_financials=True,treatment=True):
+    control=control_df()
+    if bmwi_request:
+        clean_bmwi_request()
+        add_id_to_bmwi_data("treatment_ids.csv")
+    if base_request:
+        chdir_data()
+        names=pd.read_csv("bmwi_request.csv")["Zuwendungsempfänger"].to_list()
+        full_workflow("general",path=r"C:\Users\lukas\Desktop\bachelor\data\treatment",names=names)
+    if id_request:
+        treatment_base_ama=pd.read_csv(r"C:\Users\lukas\Desktop\bachelor\data\treatment\companybvd_ama.csv")
+        treatment_base_ob=pd.read_csv(r"C:\Users\lukas\Desktop\bachelor\data\treatment\ob_contact_infobvd_orbis.csv")
+        treatment_id_dict=id_dict(treatment_base_ama).append_ids(treatment_base_ob)
+        treatment_ids=treatment_id_dict.get_ids()
+        full_workflow("id",path=r"C:\Users\lukas\Desktop\bachelor\data\treatment",ids=treatment_ids)
+        treatment_id_dict.to_csv("treatment_ids.csv")
+    if merge_financials:
+        os.chdir(r"C:\Users\lukas\Desktop\bachelor\data\treatment")
+        amadeus_financials=pd.read_csv("financialsbvd_ama.csv")
+        orbis_financials=pd.read_csv("ob_ind_g_fins_eurbvd_orbis.csv")
+        table=financial_table_builder().build_financial_table(amadeus_financials,orbis_financials)
+        os.chdir(r"C:\Users\lukas\Desktop\bachelor\data\treatment")
+        table._df.to_excel("financials_merge.xlsx")
+        data=table._df
+    if treatment:
+        data=treatment_group_treatment_workflow()
+    return data
+
+##############control
+def control_workflow(base_request=True,id_request=True,merge_financials=True,treatment=True):
+    control=control_df()
+
+    if base_request:
+        control.manual_del().check_not_treated().general_request()
+    if id_request:
+        control_base_ama=pd.read_csv(r"C:\Users\lukas\Desktop\bachelor\data\control\companybvd_ama.csv")
+        control_base_ob=pd.read_csv(r"C:\Users\lukas\Desktop\bachelor\data\control\ob_contact_infobvd_orbis.csv")
+        control_id_dict=id_dict(control_base_ama).append_ids(control_base_ob)
+        control_ids=control_id_dict.get_ids()
+        control.id_request(control_ids)
+        control_id_dict.to_csv("control_ids.csv")
+
+    if merge_financials:
+        os.chdir(r"C:\Users\lukas\Desktop\bachelor\data\control")
+        amadeus_financials=pd.read_csv("financialsbvd_ama.csv")
+        orbis_financials=pd.read_csv("ob_ind_g_fins_eurbvd_orbis.csv")
+        table=financial_table_builder().build_financial_table(amadeus_financials,orbis_financials)
+        os.chdir(r"C:\Users\lukas\Desktop\bachelor\data\control")
+        table._df.to_excel("financials_merge.xlsx")
+        data=table._df
+    if treatment:
+        if not merge_financials:
+            os.chdir(r"C:\Users\lukas\Desktop\bachelor\data\control")
+            data=pd.read_excel("financials_merge.xlsx")
+        data=treatment_data_control_group(data).add_treatment_cols()
+        data.to_excel("financials_with_treatment.xlsx")
+    return data
+
+
+def complete_workflow(treatment=True,control=True,imputation=True,clean=True):
+    if treatment:
+        financials_merge_treatment=treatment_workflow(bmwi_request=False,base_request=False,id_request=False,merge_financials=False,treatment=True)
+    elif not treatment:
+        financials_merge_treatment=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\treatment\financials_with_treatment.xlsx")
+    if control:
+        financials_merge_control=control_workflow(base_request=False,id_request=False,merge_financials=False,treatment=True)
+    elif not control:
+        financials_merge_control=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\control\financials_with_treatment.xlsx")
+    if imputation:
+        merged=pd.concat([financials_merge_control,financials_merge_treatment])
+        merged.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control.xlsx",index=False)
+        merged=miss_forest_imputation_wrapper(merged,"data","treatment_and_control_merged_imputed.xlsx")
+    if clean==True:
+        merged.drop(columns=vars_ignored,inplace=True)
+
+vars_ignored=("country","consolidation code","country iso code","accounting_practice","source (for publicly quoted companies)","estimated operating revenue","estimated employees","employees original range value","closdate")
+
+complete_workflow(treatment=False,control=False,imputation=True,clean=False)

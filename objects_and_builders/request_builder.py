@@ -1,13 +1,12 @@
 import os
 import pandas as pd
-from datahandling.change_directory import chdir_sql_requests
-from query_builder import query_builder
+from objects_and_builders.query_builder import query_builder
 from processing.my_list import upper_list
-from build_ids import id_dict
-from wrds_table import wrds_table,table_builder
+from objects_and_builders.id_dict import id_dict
+from objects_and_builders.wrds_table import wrds_table,table_builder
 from datahandling.json_to_dict import json_to_dict
 
-wrds_map=json_to_dict(r"C:\Users\lukas\Desktop\bachelor\data\map.json")
+
 
 class search_list(list):
     def __init__(self,*args):
@@ -20,7 +19,7 @@ class search_list(list):
                 self.remove(item)
             except ValueError:
                 None
-from query_builder import query_builder
+
 
 class wrds_request():
     def __init__(self) -> None:
@@ -38,16 +37,25 @@ class wrds_request():
         self.sizes=None
     def set_names(self,names):
         self.names_tuple=tuple(list(map(lambda x:x.upper(),names)))
+        self.not_found=search_list(self.names_tuple)
         #wir machen hier nur requests die abhängig von der größe sind, das heißt wir initiaten die class mit einem table name
-    def general_request(self,search_params={"how":"exact"},output_file_name=None,path=None):
+    def table_workflow(self,size_long):
+        if type(self)==orbis_request:
+            self.table=self.table_builder.build_orbis()
+        elif type(self)==amadeus_request:
+            self.table=self.table_builder.build_amadeus()
+             #ich muss hier wissen ob ich amadeus oder orbis bauen soll
+        self.table.set_size_and_name(size_long,self.table_name)
+    def general_request(self,search_params={"how":"exact"},output_file_name=None,output_path=None):
         if len(self.not_found)!=0:
             len_tuple=len(self.not_found) #not_found
             for index,name in enumerate(self.not_found):
                 print(f"{name} is currently being searched ({index}/{len_tuple})")
                 for size_long in self.sizes: #this is the sizes small,large etc.
-                    self.table=wrds_table(self.table_name,size_long)
+                    self.table_workflow(size_long)
+                    #self.table=wrds_table(self.table_name,size_long)
                     path=self.table.build_path()
-                    request_str=self.query.build_general_request(path,name,search_params) 
+                    request_str=self.query.build_general_query_string(path,name,search_params) 
                     request=self.connection.raw_sql(request_str)
                     if not request.empty:
                         #full_df=concat_dfs([full_df,request])
@@ -58,33 +66,32 @@ class wrds_request():
             except KeyError:
                 print("no entries found")
             self.not_found.remove_list(self.found)
-            if path!=None:
+            if output_path!=None:
                 os.chdir(path)
-            if output_file_name!=None:
-                self._df.to_csv(output_file_name)  
+            #if output_file_name!=None:
+                #self._df.to_csv(output_file_name)  
+        csv_name=self.table_name+self.table.database_prefix+".csv"
+        self._df.to_csv(csv_name)
         return self
-    def id_request(self,connection):
+    def id_request(self):
         #chdir_sql_requests()
+        wrds_map=pd.read_csv(r"C:\Users\lukas\Desktop\bachelor\data\map.csv").to_dict()
         for size_long in self.sizes:
-            if type(self)==orbis_request:
-                self.table=self.table_builder.build_orbis()
-            elif type(self)==amadeus_request:
-                self.table=self.table_builder.build_amadeus()
-                 #ich muss hier wissen ob ich amadeus oder orbis bauen soll
-            self.table.set_size_and_name(size_long,self.table_name)
+            self.table_workflow(size_long)
             path=self.table.build_path() #hier müssen wir parameter einfügen um zu setten
             sql=self.query.build_id_query_string(path,self.ids)
             #ids_as_array = '{' + ','.join(map(str, self.ids)) + '}'
-            request_table=connection.raw_sql(sql)
+            request_table=self.connection.raw_sql(sql)
             self._df=pd.concat([self._df,request_table],ignore_index=True)
         csv_name=self.table_name+self.table.database_prefix+".csv"
         self._df.rename(wrds_map)
         self._df.to_csv(csv_name,index=False)
-    def get_ids(self):
-        self.ids=id_dict(self._df)
+    #def get_ids(self):
+        #self.ids=id_dict(self._df)
+        #return self.ids
 
-        return self.ids
-    
+
+
 class orbis_request(wrds_request):
     def __init__(self) -> None:
         super().__init__()

@@ -1,14 +1,12 @@
 import pandas as pd
 import os
-from cleaning.return_rechtsform import return_rechtsform
+#from cleaning.return_rechtsform import return_rechtsform
 import sys
 #sys.path.append(r'E:\virtual_environments\gaming_venv\Lib\site-packages\wrds')
-
-from cleaning.my_strip import my_rstrip
-#from lukasdata.cleaning.my_strip import my_rstrip
-from cleaning.my_strip import my_rstrip
+from processing.my_string import my_rstrip
 import regex as re
-from datahandling.change_directory import chdir_data
+from datahandling.change_directory import chdir_data,chdir_id
+from processing.rechtsform import return_rechtsform
 
 def delete_equal(query):
     column_names=query.columns
@@ -55,6 +53,22 @@ def clean_bmwi_request(path=None):
     print(my_df)
     my_df=my_df[my_df["Zuwendungsempfänger"]!="Keine Anzeige aufgrund datenschutzrechtlicher Regelungen."]
     my_df.to_csv("bmwi_request.csv",index=False)
+
+
+
+def add_id_to_bmwi_data(id_filename):
+    chdir_data()
+    bmwi_data=pd.read_csv("bmwi_request.csv")
+    chdir_id()
+    ids_and_names=pd.read_csv(id_filename)
+    #up both?
+    #bmwi_data["Zuwendungsempfänger"]=bmwi_data["Zuwendungsempfänger"].map(lambda x:x.upper())
+    bmwi_data_with_ids=pd.merge(bmwi_data,ids_and_names,left_on="Zuwendungsempfänger",right_on="names",how="inner")
+    bmwi_data_with_ids.drop(columns="names",inplace=True)
+    chdir_data() 
+    bmwi_data_with_ids.to_csv("bmwi_request_with_ids.csv",index=False)
+
+
 
 
 
