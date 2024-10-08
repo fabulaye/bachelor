@@ -1,85 +1,140 @@
+from econml.dml import DML
+from sklearn.linear_model import LassoCV, LogisticRegressionCV
+from sklearn.ensemble import RandomForestRegressor
 import numpy as np
 import pandas as pd
-from econml.dr import DRLearner
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from datahandling.change_directory import chdir_sql_requests,chdir_data
+from processing.my_df import mydf
+from joblib import dump,load
+from datahandling.change_directory import chdir_data
+from matplotlib import pyplot as plt
 
-from sklearn.model_selection import train_test_split, StratifiedKFold
-from econml.dml import LinearDML,DML,SparseLinearDML
-import shap
-from sklearn.linear_model import LassoCV,Ridge
-from sklearn.preprocessing import StandardScaler
-#lasso konvergiert nicht
-# Separate the outcome, treatment, and covariates
 
-scaler=StandardScaler()
-
-#chdir_sql_requests()
-chdir_data()
-data=pd.read_excel("treatmentfinancialsbvd_ama_filtered.xlsx")
-
-def create_test_train(data,y_feature):
-
-    Y = data[y_feature]
-    columns_to_drop=["annual_subsidy","treatment_weight","treatment","Fördersumme in EUR","bvdid","closdate_year","unit","exchrate","exchrate2",y_feature,"country","repbas","closdate","accpra","currency","Unnamed: 0_y","earnings","name","id","game_name","moby_id","release_date","platform_releases","publishers","score","rank","critics","genre","steam_link","title","review_count","review_percentage","price","genres","year","review_percentage_mean","review_count_mean","score_mean","rank_mean","critics_mean","price_mean","review_count_sum"]
-    data["compcat"],uniques=pd.factorize(data["compcat"])
-    data.drop(columns=columns_to_drop,inplace=True)
-    cols = list(data.columns)
-    cols.insert(-1, cols.pop(cols.index('summed_annual_subsidy')))
-    data = data[cols]
-    data=scaler.fit_transform(data)
-    X = data[:,:-1]
-    T =data[:,1]
-
+def run_dml_model_with_weights(X, T, Y, W=None, weights=None, model_y='lasso', model_t='logistic', model_final='lasso', random_state=0):
+    """
+    Function to run a Double Machine Learning (DML) model from econml with matched weights.
     
-    X_train, X_test, Y_train, Y_test, T_train, T_test = train_test_split(X, Y, T, test_size=0.2, random_state=123)
-    return X_train, X_test, Y_train, Y_test, T_train, T_test,cols
+    Parameters:
+    - X: array-like, shape (n_samples, n_features)
+        Covariates/features.
+    - T: array-like, shape (n_samples,)
+        Treatment indicator/variable.
+    - Y: array-like, shape (n_samples,)
+        Outcome/target variable.
+    - W: array-like, shape (n_samples, n_controls), optional
+        Controls/exogenous variables. If None, defaults to an empty list (i.e., no controls).
+    - weights: array-like, shape (n_samples,), optional
+        Weights from the matching process (e.g., inverse propensity score weights).
+    - model_y: str, optional
+        Model to estimate the outcome regression (Y | X, W). Options: 'lasso', 'random_forest'. Default is 'lasso'.
+    - model_t: str, optional
+        Model to estimate the treatment (T | X, W). Options: 'logistic', 'random_forest'. Default is 'logistic'.
+    - model_final: str, optional
+        Model to use for final effect estimation. Options: 'lasso', 'random_forest'. Default is 'lasso'.
+    - random_state: int, optional
+        Seed for random number generator.
 
-def dml_model(Y_train,T_train,X_train):
-    model_y = RandomForestRegressor()
-    model_t = RandomForestRegressor()
+    Returns:
+    - dml_model: Fitted DML model.
+    """
 
-    dml_learner = DML(model_y=model_y, model_t=model_t, cv=5,model_final=Ridge(fit_intercept=False, max_iter=20000))
-    #dml_learner=SparseLinearDML(model_y=model_y, model_t=model_t)
+    # Choose the outcome model
+    if model_y == 'lasso':
+        model_y = LassoCV(cv=5, random_state=random_state)
+    elif model_y == 'random_forest':
+        model_y = RandomForestRegressor(random_state=random_state)
+    else:
+        raise ValueError(f"Unknown model_y '{model_y}'. Choose 'lasso' or 'random_forest'.")
 
-        # Fit the model
-    dml_learner.fit(Y_train, T_train, X=X_train)
-    return dml_learner
+    # Choose the treatment model
+    if model_t == 'logistic':
+        model_t = LogisticRegressionCV(cv=5, random_state=random_state)
+    elif model_t == 'random_forest':
+        model_t = RandomForestRegressor(random_state=random_state)
+    else:
+        raise ValueError(f"Unknown model_t '{model_t}'. Choose 'logistic' or 'random_forest'.")
+
+    # Choose the final model
+    if model_final == 'lasso':
+        model_final = LassoCV(cv=5, random_state=random_state)
+    elif model_final == 'random_forest':
+        model_final = RandomForestRegressor(random_state=random_state)
+    else:
+        raise ValueError(f"Unknown model_final '{model_final}'. Choose 'lasso' or 'random_forest'.")
+
+    # If no controls are provided, set to empty list
+    if W is None:
+        W = np.empty((X.shape[0], 0))
+
+    # Define the DML model with model_final
+    dml_model = DML(model_y=model_y, model_t=model_t, model_final=model_final, random_state=random_state)
+
+    # Fit the model with weights
+    dml_model.fit(Y, T, X=X, sample_weight=weights)
+
+    return dml_model
 
 
-X_train, X_test, Y_train, Y_test, T_train, T_test,cols=create_test_train(data,"shfd")
 
-dml_learner=dml_model(Y_train,T_train,X_train)
+excluded_vars=["treatment","total_annual_subsidy","subsidy","subsidy_duration_day","reverse_treatment","distance","weights","subclass","shfd","bvdid"]
+matched_data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\matched_data.xlsx")
+input_data=matched_data.drop(columns=excluded_vars)
 
-feature_importance=dml_learner.model_final_.coef_
-# Estimate the treatment effect on the test set
-treatment_effects = dml_learner.effect(X_test)
-feature_importance_df=pd.DataFrame(feature_importance,cols)
-print(feature_importance_df)
+input_data=filter_input(input_data)
+
+input_mydf=mydf(input_data)
+input_mydf["rechtsform"],factor_map=input_mydf.factorize_series(input_mydf["rechtsform"])
+input_mydf["compcat"],factor_map=input_mydf.factorize_series(input_mydf["compcat"],{"SMALL":0,"MEDIUM":1,"LARGE":2,"VERY_LARGE":3})
+treatment_data=matched_data["treatment"]
+shfd=matched_data["shfd"]
+weights=matched_data["weights"]
+
+def run_and_save():
+    bachelor_dml=run_dml_model_with_weights(input_mydf,treatment_data,shfd,W=input_data[["empl","sales"]],weights=weights,model_y="random_forest",model_final="random_forest",model_t="random_forest")
+    chdir_data()
+    dump(bachelor_dml,"dml_bachelor.jolib")
+
+#run_and_save()
+chdir_data()
+bachelor_dml=load("dml_bachelor.jolib")
+
+treatment_effects=bachelor_dml.effect(input_mydf)
 
 
-X_test=np.column_stack((X_test,treatment_effects))
+def startup_analysis():
+    startup=input_mydf[input_mydf["startup"]==True]
+    treatment_effects_startup = bachelor_dml.effect(startup)
+    print("Estimated treatment effect:", np.mean(treatment_effects_startup))
+    plt.hist(treatment_effects_startup,bins=30)
+    plt.plot()
+    plt.show()
 
-# Summary of average treatment effect
-ate = np.mean(treatment_effects)
-print(f'Average Treatment Effect (ATE): {ate}')
+    not_startup=startup=input_mydf[input_mydf["startup"]==False]
+    treatment_effects_not_startup = bachelor_dml.effect(not_startup)
+    print("Estimated treatment effect:", np.mean(not_startup))
+    plt.hist(treatment_effects_not_startup,bins=30)
+    plt.plot()
+    plt.show()
 
-# Subgroup analysis
-X_test=pd.DataFrame(X_test,columns=cols)
-X_test.rename(columns={"summed_annual_subsidy":"treatment_effect"})
 
-#subgroup_effects = X_test.groupby('empl')['treatment_effect'].mean()
-chdir_sql_requests()
-X_test.to_excel("X_test_with_treatment_effects.xlsx")
-#print(subgroup_effects)
+def plot_var_treatment_scatter(var,treatment_effects=treatment_effects):
+    plt.scatter(input_mydf[var], treatment_effects, alpha=0.5)
+    plt.plot()
+    plt.show()
 
-# SHAP analysis for model interpretation
-#explainer = shap.TreeExplainer(dml_learner)
-shap_values=dml_learner.shap_values(X)
-shap.plots.beeswarm(shap_values["solr"]["summed_annual_subsidy"])
-#shap_values = explainer.shap_values(X_test)
+startup_analysis()
+plot_var_treatment_scatter("empl")
 
-# Plot the SHAP values
-#shap.summary_plot(shap_values, X_test)
+#quantile analysis with empl
+
+def plot_var_treatment_quantile():
+    df['Quantile'] = pd.qcut(df['Company_Size'], q=4)  # Dividing into 4 quantiles
+    quantile_effects = df.groupby('Quantile')['Treatment_Effect'].mean()
+    print(quantile_effects)
+
+
+#analyze variance 
+#shap values
+#use mydf bachelor statistics like histograms etc. 
+#x should be moderators of the treatment effect, in general or just heterogeneity?
+
 

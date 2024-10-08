@@ -36,7 +36,8 @@ orbis_general_and_description_tables=[
                                       
                                       "ob_legal_info",
                                       
-                                      "ob_contact_info"
+                                      "ob_contact_info",
+                                      "ob_branches"
 ]
 
 low_prio_orbis_tables=["ob_additional_company_info","ob_branches","ob_hq","ob_industry_classifications","ob_trade_description",] +orbis_principal_and_agents_tables

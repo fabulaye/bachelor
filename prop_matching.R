@@ -1,29 +1,28 @@
 #install.packages("MatchIt")
 library(MatchIt)
 library(readxl)
+library("writexl")
 
-#args <- commandArgs(trailingOnly = TRUE)
 
-#if(args)==""
 setwd("C:/Users/lukas/Desktop/bachelor/data")
-data=read_excel("treatment_and_control_merged_imputed.xlsx") 
+data=read_excel("matching_input.xlsx") 
 
 
+data$reverse_treatment <- ifelse(data$treatment == 1, 0, 1)
 
-vars_ignored=c("X","closdate_year","bvdid","summed_annual_subsidy","annual_subsidy","treatment_weight","country","consolidation code","country iso code","accounting practice","source (for publicly quoted companies)","estimated operating revenue","estimated employees","employees original range value","closdate")
-#should I include compcat? What are the criteria for including vars in matching--> lit wieder checken 
-matchit_data=data[,!colnames(data) %in% vars_ignored]
 
+initial_unbalance=function(){
 m.out0 <- matchit(treatment ~ ., data = matchit_data,
                   method = NULL, distance = "glm")
 
-summary(m.out0)
-#stratified
-m.out1 <- matchit(treatment ~ .-bvdid, data = matchit_data,
-                  method = "nearest", distance = "glm",caliper=0.4,exact = ~ bvdid)
+summary(m.out0)}
 
-summary(m.out1, un = FALSE)
+set.seed("1871")
+m.out1 <- matchit(reverse_treatment ~ ebit + cash + debt + ebitda + ifas + sales , data = data,
+                  method = "nearest", distance = "glm",caliper=0.4, group = "bvdid",ratio = 3)
 
-plot(m.out1, type = "jitter", interactive = FALSE)
+#summary(m.out1, un = FALSE)
 
 matched_data=match.data(m.out1)
+#matched_data_complete=cbind(matched_data,data[,concat_vars])
+write_xlsx(matched_data, "matching_output.xlsx")

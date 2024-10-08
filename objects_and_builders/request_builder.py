@@ -2,7 +2,6 @@ import os
 import pandas as pd
 from objects_and_builders.query_builder import query_builder
 from processing.my_list import upper_list
-from objects_and_builders.id_dict import id_dict
 from objects_and_builders.wrds_table import wrds_table,table_builder
 from datahandling.json_to_dict import json_to_dict
 
@@ -72,6 +71,7 @@ class wrds_request():
                 #self._df.to_csv(output_file_name)  
         csv_name=self.table_name+self.table.database_prefix+".csv"
         self._df.to_csv(csv_name)
+        self.not_found.to_csv("not_found.csv")
         return self
     def id_request(self):
         #chdir_sql_requests()

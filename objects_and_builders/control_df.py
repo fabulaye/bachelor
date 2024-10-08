@@ -3,13 +3,12 @@ import pandas as pd
 import os
 from datahandling.change_directory import chdir_data
 import requests
-from bs4 import BeautifulSoup
+#from bs4 import BeautifulSoup
 import pandas as pd
-from datahandling.change_directory import chdir_data
+from datahandling.change_directory import chdir_data,chdir_root_search
 from processing.my_list import list_difference
-
-
 from objects_and_builders.wrds_database import full_workflow
+#from thefuzz import process
 
 def list_difference(list_1, list_2,case_sensitive=True):
     if case_sensitive==True:
@@ -35,9 +34,11 @@ def upper_list(lst):
 class control_df():
     def __init__(self):
         chdir_data()
-        self.treated_names=pd.read_csv("bmwi_request.csv")["Zuwendungsempfänger"].to_list()
+        self.treated_names=pd.read_csv("bmwi_request.csv")["name"].to_list()
         os.chdir("control")
-        self.control_names=pd.read_csv("game_ev_members.csv")["name"].to_list()
+        #self.control_names=pd.read_csv("game_ev_members.csv")["name"].to_list()
+        self.control_names=pd.read_excel("control_mobygames_modified.ods")
+        self.control_names=self.control_names[self.control_names["dev_pub"]==1]["name"]
         self.to_be_deleted=pd.read_csv("manual_deleted.csv")["name"].to_list()
         self.ids=None
     def manual_del(self):
@@ -51,6 +52,13 @@ class control_df():
         self.control_names=list_difference(self.control_names,self.treated_names,case_sensitive=False)
         self.control_names=self.control_names
         return self
+    def fuzzy_check_not_treated(self,threshhold):
+        fuzzy_matches={}
+        for name in self.control_names:
+            best_match=process.extractOne(name,self.treated_names)
+            if int(best_match[1])>=threshhold:
+                fuzzy_matches[name]=best_match
+        return fuzzy_matches
     def game_ev_request():
         request=requests.get("https://www.game.de/mitglieder/")
         lst=[]
@@ -68,4 +76,17 @@ class control_df():
         full_workflow("general",path=r"C:\Users\lukas\Desktop\bachelor\data\control",names=self.control_names)
     def id_request(self,ids):
         full_workflow("id",path=r"C:\Users\lukas\Desktop\bachelor\data\control",ids=ids)
+    def filter_control(self):
+        chdir_root_search("control")
+        filter_df=pd.read_excel("control_mobygames_modified.ods",index_col=False)
+        filter_df=filter_df[filter_df["def_pub"]==1]
+        #what about the the double ids etc. lieber nicht mergen sondern filtern
+        financials=pd.read_excel("financials_with_treatment.xlsx")
+        financials_reduced=financials[financials["bvdid"].isin(filter_df["bvdid"].to_list())]
+        financials_reduced.to_excel("financials_with_treatment.xlsx",index=False)
+        return filter_df
+
+#csv_to_excel(r"C:\Users\lukas\Desktop\bachelor\data\control\control_mobygames.csv")
+
+
 

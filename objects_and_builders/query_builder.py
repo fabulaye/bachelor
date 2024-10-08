@@ -14,7 +14,7 @@ class query():
         if "country" in search_params.keys():
             self.country=search_params["country"].upper()
         if self.how=="exact":
-            self.query_string=f"""SELECT * FROM {path} WHERE Upper({self.name_identifier}) = '{name}' """
+            self.query_string=f"""SELECT * FROM {path} WHERE Upper({self.name_identifier}) = UPPER('{name}') """
         elif self.how=="like":
             self.query_string=f"""SELECT * FROM {path} WHERE Upper({self.name_identifier}) LIKE '%%{name}%%' """
         if self.country!=None:

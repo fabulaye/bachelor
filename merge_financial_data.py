@@ -3,6 +3,7 @@ from datahandling.change_directory import chdir_data
 from processing.my_list import unique_list
 import regex as re
 import numpy as np
+from processing.format_string import format_df
 
 chdir_data()
 
@@ -31,7 +32,7 @@ class financial_table():
         self._df.replace("LARGE COMPANY","LARGE",inplace=True)
         self._df.replace("VERY LARGE COMPANY","VERY LARGE",inplace=True)
     def find_duplicate_columns(self):
-        duplicate_regex=re.compile(r"^(.*?)(?=_\d)")
+        duplicate_regex=re.compile(r"(.+?)(?=_ama|_orb)")
         #duplicate_regex=re.compile(r".*_\d{1}$")
         
         partial_name_matches_list=[]
@@ -49,17 +50,51 @@ class financial_table():
         self.unique_cols=not_matched_list
     def rename_cols(df:pd.DataFrame):
         df.rename(columns=self.wrds_map,inplace=True)
-    
+    def resolve_double_ids(self):
+        #selector._df=pd.merge(selector._df,all_ids[["bvdid","name"]],how="left",on="bvdid")
+        all_ids=pd.read_csv(r"C:\Users\lukas\Desktop\bachelor\data\id\treatment_and_control_ids.csv")
+        self._df=self._df.merge(all_ids[["bvdid","name"]],on="bvdid",how="left")
+        bvdid_count=self._df.groupby("name")["bvdid"].unique()
+        indices=[True if len(val)>1 else False for val in bvdid_count]
+        double_names=bvdid_count.index[indices]
+        
+        doubles=self._df[self._df["name"].isin(double_names)]
+        not_double=self._df[~self._df["name"].isin(double_names)]
+        doubles_grouped=doubles.groupby("name")
+        new_df=[]
+        for name,group in doubles_grouped:
+            #conscode_group=group.groupby(["conscode","closdate_year"])
+            #limited_list=["LF","LIMITED_FIN._DATA"]
+            #for name,group in conscode_group:
+            #    lfs=group[group["conscode"].isin(limited_list)]
+            #    not_lfs=group[~group["conscode"].isin(limited_list)]
+            #    if len(lfs)>1:
+            #        print(lfs)
+            id_groups=group.groupby("bvdid")
+            group_len=id_groups.size()
+            group_len_filtered=group_len[group_len>=3]
+            if len(group_len_filtered)==0:
+                continue
+            if len(group_len_filtered)==1:
+                filtered_id=pd.Series(group_len_filtered.index)[0]
+                new_df.append(group[group["bvdid"]==filtered_id])
+                continue
+            else:
+                max_observations=group_len_filtered.max()
+                id=group_len_filtered[group_len_filtered==max_observations]
+                new_df.append(group[group["bvdid"]==id.index[0]])
+                continue
+        new_df=pd.concat(new_df)
+        new_df=pd.concat([new_df,not_double])
+        
+        self._df=new_df
+
+
     def resolve_conflicts(self):
         self.find_duplicate_columns()
         name_list=[]
         for tuple in self.duplicate_cols_complete:
             name_list.extend([tuple[0],tuple[1]])
-
-        test_df=self._df[name_list]
-        test_df.to_excel("duplicate_cols_debug.xlsx")
-
-        #warum hat unser df nur so wenige cols? Welche doubled fehlen?
         try:
             self.duplicate_cols_partial.remove('exchange rate from local currency to usd')
         except ValueError:
@@ -67,23 +102,23 @@ class financial_table():
         unique_columns_values=[]
         cols_to_drop=[]
         for column_name in self.duplicate_cols_partial:
-            values=self._df[[column_name+"_1",column_name+"_2"]]
+            values=self._df[[column_name+"_ama",column_name+"_orb",]]
             values=values.bfill(axis=1).ffill(axis=1).fillna("nan_placeholder")
+            values=pd.concat([values,self._df[["bvdid","closdate_year"]]],axis=1)
             if values.iloc[:,0].equals(values.iloc[:,1]):
                 value=values.iloc[:,0].rename(column_name)
                 #value_series=pd.Series(value,name=column)
                 unique_columns_values.append(value)
-                cols_to_drop.extend([column_name+"_1",column_name+"_2"])
-            #else: 
-            #    comparison = values.iloc[:,0] != values.iloc[:,1]
-            #    rows_with_diff = values[comparison]  
-            #    number_diff=comparison.sum()
-#
-            #    if number_diff>=20:
-            #        print(column)
-            #    conflict_indices.extend(list(rows_with_diff.index))
-            #cols_to_drop.extend([column+"_1",column+"_2"])
-            
+                cols_to_drop.extend([column_name+"_ama",column_name+"_orb"])
+            else: 
+                #vergleich welche mehr values hat und die nehmen? 
+                comparison = values.iloc[:,0] != values.iloc[:,1]
+                rows_with_diff = values[comparison]  
+                number_diff=comparison.sum()
+                value=values.iloc[:,0].rename(column_name)
+                unique_columns_values.append(value)
+                cols_to_drop.extend([column_name+"_ama",column_name+"_orb"])
+
         #conflict_indices=unique_list(conflict_indices) #indizes fürs Problem df
         resolved_conflict_df=pd.concat(unique_columns_values,axis=1)
         self._df.drop(columns=cols_to_drop,inplace=True)
@@ -91,8 +126,9 @@ class financial_table():
         self._df.replace("nan_placeholder",None,inplace=True)
 
     def delete_double_rows(self):
+        #das hier ist nach dem merge von amadeus und orbis --> die Idee ist Informationen aus beiden Sets zu verknüpfen
         rows=[]
-        for index,group in self._df.groupby(["bvdid","closdate_year"]):
+        for index,group in self._df.groupby(["bvdid","closdate_year"]): #nach my_id groupen vorher bvdid
             if len(group)==1:
                 rows.append(group.iloc[0,:])
             if len(group)==2: 
@@ -149,29 +185,23 @@ def duplicated_col(df):
 class financial_table_builder():
     def __init__(self) -> None:
         self.financial_table=financial_table()
-    def build_financial_table(self,df_1,df_2):
+    def build_financial_table(self,amadeus,orbis):
         #rename und replace davor?
-        df_1.rename(columns=self.financial_table.wrds_map,inplace=True)
-        df_2.rename(columns=self.financial_table.wrds_map,inplace=True)
-        df_1.drop(columns=cols_to_drop,inplace=True,errors="ignore")
-        df_2.drop(columns=cols_to_drop,inplace=True,errors="ignore")
-        financials_merged=pd.merge(df_1,df_2,on=["bvdid","closdate_year","consolidation code"],suffixes=["_1","_2"],how="outer")
+        amadeus.rename(columns=self.financial_table.wrds_map,inplace=True)
+        orbis.rename(columns=self.financial_table.wrds_map,inplace=True)
+        amadeus.drop(columns=cols_to_drop,inplace=True,errors="ignore")
+        orbis.drop(columns=cols_to_drop,inplace=True,errors="ignore")
+        financials_merged=pd.merge(amadeus,orbis,on=["bvdid","closdate_year"],suffixes=["_ama","_orb"],how="outer") 
+        financials_merged=format_df(financials_merged)
         self.financial_table._df=financials_merged
-        #self.financial_table._df.drop(columns=cols_to_drop,inplace=True)#geht nicht so einf
-        #self.financial_table.rename_cols(self.financial_table._df) #brauchen wir das noch?
+        
         self.financial_table.replace_wrds_data()
+        self.financial_table.resolve_double_ids()
         self.financial_table.find_duplicate_columns()
         self.financial_table.resolve_conflicts()
         self.financial_table._df.astype("float",errors="ignore")
-        self.financial_table.delete_double_rows()
+        self.financial_table.delete_double_rows() #ich habe bei den ids auch schon eine function
         return self.financial_table
-
-
-
-#Wie handle ich consolidation codes--> vielleicht die Partens einfach droppen
-#duplicates für closdate_year,bvdid columns selecten. consolidation codes vergleichen 
-#units:thousands millions etc.
-#imputation mit groups
 
 
 

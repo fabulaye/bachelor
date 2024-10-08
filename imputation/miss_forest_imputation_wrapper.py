@@ -1,27 +1,14 @@
 import pandas as pd
 import subprocess
 import os
-from processing.my_df import mydf
+from processing.my_df import mydf,drop_unnamed_columns
+from datahandling.change_directory import root_search
 
-import os
-import getpass
-
-username = getpass.getuser()
-def root_search(directory):
-      root_list=[]
-      walk=os.walk(f"C:/Users/{username}/Desktop/bachelor")
-      for root,dirs,files in walk:
-            if root.endswith(directory):
-                  root_list.append(root)
-            if len(root_list)>1:
-                  print("to many roots")
-                  return None
-      return root_list[0].replace("\\","/")
 
 
 factorized_cols=["compcat",]
 
-def miss_forest_imputation_wrapper(df:pd.DataFrame,directory,output_file_name=None):
+def miss_forest_imputation_wrapper(df:pd.DataFrame,directory,output_file_name=None,categorial_vars=["compcat","bvdid","rechtsform","age"]):
     df=mydf(df)
     df.reset_index(inplace=True,drop=True)
     #compcat_map={"SMALL":0,"MEDIUM":1,"LARGE":2,"VERY LARGE":3}
@@ -29,12 +16,13 @@ def miss_forest_imputation_wrapper(df:pd.DataFrame,directory,output_file_name=No
     #df["compcat"]=compcat_factorized  
     #noise_columns=["account_unit","exchrate","number of months"]   
     numeric_df=df.to_numeric()#.drop(columns=noise_columns,errors="ignore") #wieso workt das? Inplace =False?
-    categorial_vars=["compcat","bvdid"]
     categorial_df=df[categorial_vars]
     root=root_search(directory)
     os.chdir(root)
     miss_forest_input_df=pd.concat([categorial_df,numeric_df],axis=1)
-    miss_forest_input_df.to_csv("miss_forest_input.csv")
+    #miss_forest_input_df.drop(columns="Unnamed: 0",errors="ignore",inplace=True)
+    miss_forest_input_df=drop_unnamed_columns(miss_forest_input_df)
+    miss_forest_input_df.to_csv("miss_forest_input.csv",index=False)
     file_name=r"C:\Users\Lukas\Documents\GitHub\bachelor\imputation\miss_forest_imputation.R"
     result=subprocess.run([f"Rscript",file_name,root],capture_output=True,text=True)
     print(result.stdout)
@@ -43,11 +31,6 @@ def miss_forest_imputation_wrapper(df:pd.DataFrame,directory,output_file_name=No
     imputed=pd.read_excel("miss_forest_output.xlsx")
     non_numeric_columns=[item for item in df.non_numeric_cols() if item not in categorial_vars]
     non_numeric_df=df[non_numeric_columns]
-    #combined_cols=list(imputed_numeric.columns)+list(non_numeric_df.columns)#+noise_columns
-    #complete=pd.DataFrame(columns=combined_cols,index=range(len(df)))
-    #complete.loc[imputed_numeric.index,imputed_numeric.columns]=imputed_numeric
-    #complete.loc[non_numeric_df.index,non_numeric_df.columns]=non_numeric_df
-    #complete.loc[df[noise_columns].index,df[noise_columns].columns]=df[noise_columns]
     complete=pd.concat([non_numeric_df,imputed],axis=1)
     os.remove("miss_forest_input.csv")
     os.remove("miss_forest_output.xlsx")
