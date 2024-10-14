@@ -170,7 +170,7 @@ class financial_table():
             if len(group)>2:
                 group.fillna("nan_placeholder",inplace=True)
                 unconsolidated_codes=["U1","U2","nan_placeholder","UNCONSOLIDATED_DATA"]
-                data=group[group["conscode"].isin(unconsolidated_codes)]
+                data=group[(group["conscode_ama"].isin(unconsolidated_codes))|(group["conscode_orb"].isin(unconsolidated_codes))]
                 if len(data)==0:
                     data=group[~group["conscode"].isin(unconsolidated_codes)]
                 data.replace("nan_placeholder",None)

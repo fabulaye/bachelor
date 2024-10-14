@@ -22,15 +22,14 @@ df_input["bvdid"]=factor(df_input[,"bvdid"])
 df_input["integrated_dummy"]=factor(df_input[,"integrated_dummy"])
 df_input["startup"]=factor(df_input[,"startup"])
 df_input["rechtsform"]=factor(df_input[,"rechtsform"])
-
+df_input["STATUS"]=factor(df_input[,"STATUS"])
 
 
 col_na_percent=colSums(is.na.data.frame(df_input))/nrow(df_input)
 df_input=df_input[col_na_percent<1]
 col_na_percent=colSums(is.na.data.frame(df_input))/nrow(df_input)
 
-
-dont_impute=names(col_na_percent[col_na_percent>=0.9])
+dont_impute=names(col_na_percent[col_na_percent>=0.8])
 
 pred_matrix=create_predictor_matrix(df_input)
 pred_matrix[dont_impute,]=0
@@ -48,7 +47,8 @@ errors_reduced=errors_reduced[order(errors_reduced[,"NMSE"],decreasing=TRUE),]
 imputed_reduced=mf_model_reduced$ximp
 imputed_reduced=imputed_reduced[!colnames(imputed_reduced) %in% dont_impute]
 
+dont_impute_df=data.frame(dont_impute)
 
-
+write_xlsx(dont_impute_df, "not_imputed_columns.xlsx")
 write_xlsx(imputed_reduced, "miss_forest_output.xlsx")
 write_xlsx(errors_reduced, "miss_forest_errors.xlsx")

@@ -167,6 +167,5 @@ class workflow():
 
 
 bachelor_workflow=workflow()
-bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=True,treatment=True).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=True).merge_and_concat(True).categorials(True).clean(True).impute(False).drop_imputed_cols(False).match(False)
+bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(True).drop_imputed_cols(True).match(False)
 
-#matching may be optional

@@ -9,7 +9,7 @@ from datahandling.change_directory import chdir_data
 from matplotlib import pyplot as plt
 
 
-def run_dml_model_with_weights(X, T, Y, W=None, weights=None, model_y='lasso', model_t='logistic', model_final='lasso', random_state=0):
+def run_dml_model_with_weights(X, T, Y, W=None, model_y='lasso', model_t='logistic', model_final='lasso', random_state=0):
     """
     Function to run a Double Machine Learning (DML) model from econml with matched weights.
     
@@ -69,36 +69,37 @@ def run_dml_model_with_weights(X, T, Y, W=None, weights=None, model_y='lasso', m
     dml_model = DML(model_y=model_y, model_t=model_t, model_final=model_final, random_state=random_state)
 
     # Fit the model with weights
-    dml_model.fit(Y, T, X=X, sample_weight=weights)
+    dml_model.fit(Y, T, X=X)
 
     return dml_model
 
 
 
 excluded_vars=["treatment","total_annual_subsidy","subsidy","subsidy_duration_day","reverse_treatment","distance","weights","subclass","shfd","bvdid"]
-matched_data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\matched_data.xlsx")
-input_data=matched_data.drop(columns=excluded_vars)
+#matched_data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\matched_data.xlsx")
+#input_data=matched_data.drop(columns=excluded_vars)
 
-input_data=filter_input(input_data)
+#input_data=filter_input(input_data)
+
+input_data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_dropped.xlsx")
 
 input_mydf=mydf(input_data)
 input_mydf["rechtsform"],factor_map=input_mydf.factorize_series(input_mydf["rechtsform"])
 input_mydf["compcat"],factor_map=input_mydf.factorize_series(input_mydf["compcat"],{"SMALL":0,"MEDIUM":1,"LARGE":2,"VERY_LARGE":3})
-treatment_data=matched_data["treatment"]
-shfd=matched_data["shfd"]
-weights=matched_data["weights"]
+treatment_data=input_data["treatment"]
+shfd=input_data["shfd"]
+#weights=input_data["weights"]
 
 def run_and_save():
-    bachelor_dml=run_dml_model_with_weights(input_mydf,treatment_data,shfd,W=input_data[["empl","sales"]],weights=weights,model_y="random_forest",model_final="random_forest",model_t="random_forest")
+    bachelor_dml=run_dml_model_with_weights(input_mydf,treatment_data,shfd,W=input_data[["empl","sales"]],model_y="random_forest",model_final="random_forest",model_t="random_forest")
     chdir_data()
     dump(bachelor_dml,"dml_bachelor.jolib")
 
-#run_and_save()
+run_and_save()
 chdir_data()
 bachelor_dml=load("dml_bachelor.jolib")
 
 treatment_effects=bachelor_dml.effect(input_mydf)
-
 
 def startup_analysis():
     startup=input_mydf[input_mydf["startup"]==True]
