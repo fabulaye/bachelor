@@ -17,7 +17,7 @@ def calculate_days_between(date_1,date_2,date_format="%d.%m.%Y"):
     return delta.days
 
 
-treatment_vars=["annual_subsidy","treatment","treatment_weight","subsidy","subsidy_duration_day"]
+treatment_vars=["annual_subsidy","treatment","treatment_weight","subsidy","subsidy_duration_day","one_year_lag_total_annual_subsidy"]
 to_merge_vars=["bvdid","year","project_id","subsidy_start","subsidy_end"]+treatment_vars
 
 
@@ -79,9 +79,8 @@ class treatment_data_treatment_group(mydf):
             zero_series=pd.Series([0])
             annual_subsidy=group["annual_subsidy"]
             annual_subsidy_sliced=annual_subsidy.iloc[:-1]
-
-            values=pd.concat([zero_series,annual_subsidy_sliced]).reset_index(drop=True,inplace=True)
-            group["one_year_lag_total_annual_subsidy"]=values
+            values=pd.concat([zero_series,annual_subsidy_sliced]).reset_index(drop=True)
+            group["one_year_lag_total_annual_subsidy"]=values.to_list()
             new_df.append(group)
         new_df=pd.concat(new_df)
         self.__init__(new_df)
@@ -94,10 +93,7 @@ class treatment_data_control_group(mydf):
         super().__init__(df)
     def add_treatment_cols(self):
         for col in treatment_vars:
-            if col=="treatment":
-                self[col]=1
-            else:
-                self[col]=0
+            self[col]=0
         return self
 
 
@@ -125,6 +121,8 @@ class treatment_df(mydf):
         #treatment_data=treatment_df.astype(float,errors="ignore")
         treatment_data=treatment_df[to_merge_vars]
         new_df=pd.merge(financial,treatment_data,left_on=["bvdid","closdate_year"],right_on=["bvdid","year"],how="left")
+        print(len(financial)+len(treatment_data))
+        print(len(new_df))
         self.__init__(new_df)
         return self
     
@@ -157,6 +155,7 @@ class treatment_df(mydf):
     
     def fill_not_subsidized_years(self):
         #treatment_weights=self["treatment_weigths"]
+        self["treatment"].fillna(1,inplace=True)
         filled=self[treatment_vars].fillna(0)
         self[treatment_vars]=filled
         return self

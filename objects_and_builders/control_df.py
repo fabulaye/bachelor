@@ -30,35 +30,27 @@ def upper_list(lst):
     return lst
 
 
-
 class control_df():
     def __init__(self):
         chdir_data()
         self.treated_names=pd.read_csv("bmwi_request.csv")["name"].to_list()
         os.chdir("control")
-        #self.control_names=pd.read_csv("game_ev_members.csv")["name"].to_list()
+        self.game_ev_members=pd.read_csv("game_ev_members.csv")["name"].to_list()
         self.control_names=pd.read_excel("control_mobygames_modified.ods")
         self.control_names=self.control_names[self.control_names["dev_pub"]==1]["name"]
         self.to_be_deleted=pd.read_csv("manual_deleted.csv")["name"].to_list()
         self.ids=None
     def manual_del(self):
         new_list=[]
-        for member in self.control_names:
+        for member in self.game_ev_members:
             if member not in self.to_be_deleted:
                 new_list.append(member)
-        self.control_names=new_list
+        self.game_ev_members=new_list
         return self
     def check_not_treated(self): 
-        self.control_names=list_difference(self.control_names,self.treated_names,case_sensitive=False)
+        self.control_names=list_difference(self.game_ev_members,self.treated_names,case_sensitive=False)
         self.control_names=self.control_names
         return self
-    def fuzzy_check_not_treated(self,threshhold):
-        fuzzy_matches={}
-        for name in self.control_names:
-            best_match=process.extractOne(name,self.treated_names)
-            if int(best_match[1])>=threshhold:
-                fuzzy_matches[name]=best_match
-        return fuzzy_matches
     def game_ev_request():
         request=requests.get("https://www.game.de/mitglieder/")
         lst=[]

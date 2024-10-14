@@ -8,6 +8,7 @@ from processing.format_string import format_df
 
 def df_format_wrapper(df):
     df=format_df(df,rename_df={"idnr":"bvdid"})
+    #df.rename({"idnr":"bvdid"},inplace=True)
     return df
 
 class data_selector():
@@ -23,7 +24,7 @@ class data_selector():
         #wir müssen idnr renamen
         chdir_root_search("data")
         combined_df=pd.concat(map_object,ignore_index=True)
-        combined_df=df_format_wrapper(combined_df,)#problem ensteht durchs renamen
+        combined_df=df_format_wrapper(combined_df)#problem ensteht durchs renamen
         list_of_vars=variables+[merge_on]
         #for var in list_of_vars:
         #        if var not in combined_df.columns:

@@ -9,7 +9,7 @@ chdir_data()
 
 financial_tables=["ob_cflow_non_us_ind_eur_intbvd_orbis","ob_cflow_non_us_ind_eurbvd_orbis","ob_cflow_us_ind_eurbvd_orbis","ob_detailed_fmt_ind_eurbvd_orbis","ob_detailed_fmt_ind_eur_intbvd_orbis","ob_ind_g_fins_eur_intbvd_orbis","ob_ind_g_fins_eurbvd_orbis","ob_key_financials_eurbvd_orbis","financialsbvd_ama","ish_duo_guobvd_ama"]
 
-cols_to_drop=["exchrate","currency","closdate_char","exchrate2","account_unit","filing_type","audit_status","orig_currency","orig_units","accounting_practice","number of months"]
+cols_to_drop=["exchrate","currency","closdate_char","exchrate2","account_unit","filing_type","audit_status","orig_currency","orig_units","accounting_practice","number of months","subsidy_duration_days","rechtsform"]
 
 class financial_table():
     def __init__(self) -> None:
@@ -18,7 +18,7 @@ class financial_table():
         self.unique_cols=None  
         chdir_data()
         wrds_map=pd.read_csv("map.csv")
-        self.wrds_map=dict(zip(wrds_map["name"],wrds_map["description"]))
+        self.wrds_map=dict(zip(wrds_map["old_name"],wrds_map["new_name"]))
     
     def to_csv(self,filename):
         self.merged.to_csv(filename)
@@ -63,27 +63,38 @@ class financial_table():
         doubles_grouped=doubles.groupby("name")
         new_df=[]
         for name,group in doubles_grouped:
-            #conscode_group=group.groupby(["conscode","closdate_year"])
-            #limited_list=["LF","LIMITED_FIN._DATA"]
-            #for name,group in conscode_group:
-            #    lfs=group[group["conscode"].isin(limited_list)]
-            #    not_lfs=group[~group["conscode"].isin(limited_list)]
-            #    if len(lfs)>1:
-            #        print(lfs)
+        #    conscode_group=group.groupby(["conscode"])
+        #    if len(conscode_group.groups)>=2:
+        #        if "LF" in conscode_group.groups.keys() or "LIMITED_FIN._DATA" in conscode_group.groups.keys():
+        #        
+
             id_groups=group.groupby("bvdid")
-            group_len=id_groups.size()
-            group_len_filtered=group_len[group_len>=3]
-            if len(group_len_filtered)==0:
-                continue
-            if len(group_len_filtered)==1:
-                filtered_id=pd.Series(group_len_filtered.index)[0]
-                new_df.append(group[group["bvdid"]==filtered_id])
-                continue
-            else:
-                max_observations=group_len_filtered.max()
-                id=group_len_filtered[group_len_filtered==max_observations]
-                new_df.append(group[group["bvdid"]==id.index[0]])
-                continue
+            max_not_na=0
+            selected_id=""
+            for name,group in id_groups:
+                eligable_values=group[group["closdate_year"]>=2017]
+                if eligable_values.notna().sum().sum()>max_not_na:
+                    selected_id=name
+                    max_not_na=eligable_values.notna().sum().sum()
+            new_df.append(id_groups.get_group(selected_id))
+            
+            
+            #most datapoints from 2017-2023
+            #group_len=id_groups.size()
+            #group_len_filtered=group_len[group_len>=3]
+            #if len(group_len_filtered)==0:
+            #    continue
+            #if len(group_len_filtered)==1:
+            #    filtered_id=pd.Series(group_len_filtered.index)[0]
+            #    new_df.append(group[group["bvdid"]==filtered_id])
+            #    continue
+            #else:
+            #    for id in group_len_filtered.index()
+#
+            #    max_observations=group_len_filtered.max()
+            #    id=group_len_filtered[group_len_filtered==max_observations]
+            #    new_df.append(group[group["bvdid"]==id.index[0]])
+            #    continue
         new_df=pd.concat(new_df)
         new_df=pd.concat([new_df,not_double])
         
@@ -158,16 +169,21 @@ class financial_table():
                         #rows.append(group.iloc[0,:])
             if len(group)>2:
                 group.fillna("nan_placeholder",inplace=True)
-                unconsolidated_codes=["U1","U2","nan_placeholder","C2"]
-                unconsolidated=group[group["consolidation code"].isin(unconsolidated_codes)]
-                unconsolidated.replace("nan_placeholder",None)
-                unconsolidated.ffill(axis=0,limit=1,inplace=True)
-                unconsolidated.bfill(axis=0,limit=1,inplace=True)
-                rows.append(unconsolidated.iloc[0,:])
+                unconsolidated_codes=["U1","U2","nan_placeholder","UNCONSOLIDATED_DATA"]
+                data=group[group["conscode"].isin(unconsolidated_codes)]
+                if len(data)==0:
+                    data=group[~group["conscode"].isin(unconsolidated_codes)]
+                data.replace("nan_placeholder",None)
+                data.ffill(axis=0,limit=1,inplace=True)
+                data.bfill(axis=0,limit=1,inplace=True)
+                rows.append(data.iloc[0,:])
         rows_df=pd.concat(rows,axis=1)
         self._df=rows_df.T
         self._df.replace("nan_placeholder",None,inplace=True)
-
+        return self
+    def filter_12_months(self):
+        self._df=filter_12_months(self._df)
+        return self
 
 def duplicated_col(df):
     bool_index=[]
@@ -181,6 +197,11 @@ def duplicated_col(df):
     bool_index=np.array(bool_index)
     return bool_index
 
+
+def filter_12_months(df):
+    twelve_months_df=df[df["months_ama"]==12]
+    six_months_df=df[df["months_ama"]==6]
+    return twelve_months_df
 
 class financial_table_builder():
     def __init__(self) -> None:
@@ -196,11 +217,13 @@ class financial_table_builder():
         self.financial_table._df=financials_merged
         
         self.financial_table.replace_wrds_data()
+        self.financial_table.filter_12_months()
+        self.financial_table.delete_double_rows()#war vorher letzte geht das?
         self.financial_table.resolve_double_ids()
         self.financial_table.find_duplicate_columns()
         self.financial_table.resolve_conflicts()
         self.financial_table._df.astype("float",errors="ignore")
-        self.financial_table.delete_double_rows() #ich habe bei den ids auch schon eine function
+        #ich habe bei den ids auch schon eine function
         return self.financial_table
 
 

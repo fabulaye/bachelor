@@ -100,6 +100,7 @@ def clean_workflow(df):
     #df=add_my_id_to_financial(df)
     new_df=drop_companies_with_few_entries(df)
     new_df=mydf(new_df)
-    new_df_dropped,dropped_cols=new_df.drop_nan_columns(0.8,return_dropped_colname=True)
+    bachelor_exemptions=["cf","cuas","culi","ebit","ebitda","empl","enva","fias","ifas","ltdb","ncas","ncli","ocas","ocli","ofas","oncl","shfd","tfas","toas","tshf"]
+    new_df_dropped,dropped_cols=new_df.drop_nan_columns(0.8,return_dropped_colname=True,exemptions=bachelor_exemptions)
     #new_df=drop_observations_by_na(new_df_dropped,0.7)
     return new_df_dropped
