@@ -112,4 +112,4 @@ def balance_sheet_debug():
         diffs=balance_sheet_bachelor.compare_actual_and_theoretical()
         print(diffs)
 
-balance_sheet_debug()
+#balance_sheet_debug()

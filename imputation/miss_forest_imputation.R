@@ -1,14 +1,17 @@
 #("missForest")
 library("readxl")
+#install.packages("readxl")
 #remove.packages("missForest")
 library("writexl")
+#install.packages("writexl")
 library("missForestPredict")
+install.packages("missForestPredict")
 #library("randomForest")
 #library("corrplot")
 #install.packages("randomForest")
 
 directory <- commandArgs(trailingOnly = TRUE)
-#directory="C:/Users/Lukas/Desktop/bachelor/data"
+directory="C:/Users/Lukas/Desktop/bachelor/data"
 #print(directory)
 setwd(directory)
 df_input=read.csv("miss_forest_input.csv")

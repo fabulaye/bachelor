@@ -15,6 +15,7 @@ from objects_and_builders.data_selector import data_selector
 from matching_wrapper import matching_wrapper
 from processing.my_df import drop_nan_columns
 from clean_merged import clean_workflow
+from objects_and_builders.balance_sheet import balance_sheet
 
 
 class workflow():
@@ -127,6 +128,8 @@ class workflow():
             data=data.merge(state_df,on="bvdid",how="left")
             data.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials.xlsx",index=False)
         return self
+    
+
     def balance_sheet_vars():
         None
         #compare the theorical values after imputation with their actual
@@ -157,6 +160,26 @@ class workflow():
             data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned.xlsx")
             data=miss_forest_imputation_wrapper(data,"data","financials_merge_treatment_and_control_categorials_cleaned_imputed.xlsx")
         return self
+    def treatment_ratios(self,run=True):
+        if run:
+            data=pd.read_excel(r"C:\Users\Lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_dropped.xlsx")
+            data_grouped=data.groupby("bvdid")
+            new_df=[]
+            for name,group in data_grouped:
+                divisor=group["toas"][group["concurrent_treatment"]==1][0]
+                group["cum_treatment_toas_ratio"]=group["cum_treatment"]/divisor
+                new_df.append(group)
+            new_df=pd.concat(new_df)
+            self.__init__(new_df)
+            new_df.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_dropped_ratios.xlsx")
+        return self
+    def balance_sheet_items(self):
+        data=None
+        for index,observation in data.iterrows():
+            balance_sheet_object=balance_sheet(observation)
+            equity=balance_sheet_object.theoreticals.equity
+
+
     def match(self,run=True):
         if run:
             matching_wrapper(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_dropped.xlsx")
@@ -167,5 +190,5 @@ class workflow():
 
 
 bachelor_workflow=workflow()
-bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(True).drop_imputed_cols(True).match(False)
+bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(True).treatment_ratios(True).drop_imputed_cols(True).match(False)
 

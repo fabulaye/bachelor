@@ -62,6 +62,7 @@ class treatment_data_treatment_group(mydf):
                     new_row["treatment_weight"]=get_months(new_row["subsidy_start"])/12
                     new_row["annual_subsidy"]=subsidy_per_day*days
                 row["treatment"]=1
+                row["concurrent_treatment"]=1
                 row_series=pd.Series(new_row)
                 rows_list.append(row_series)
                 del new_row
@@ -87,6 +88,9 @@ class treatment_data_treatment_group(mydf):
         return self
 
     
+        
+
+
                 
 class treatment_data_control_group(mydf):
     def __init__(self,df) -> None:
@@ -110,6 +114,7 @@ def integrated_dummy(row):
             return 0
     else:
         return 0
+
 
 
 import numpy as np
@@ -160,7 +165,14 @@ class treatment_df(mydf):
         self[treatment_vars]=filled
         return self
 
-
+    def cumulative_treatment(self):
+        new_df=[]
+        for name,group in self.groupby("bvdid"):
+            group["cum_treatment"]=group["total_annual_subsidy"].cumsum()
+            new_df.append(group)
+        new_df=pd.concat(new_df)
+        self.__init__(new_df)
+        return self
 
 
 def treatment_group_treatment_workflow():
@@ -170,7 +182,7 @@ def treatment_group_treatment_workflow():
     treatment_financials=pd.read_excel("financials_merge.xlsx",index_col=False)
     treatment_group_treatment=treatment_data_treatment_group(bmwi_request).calculate_years().calculate_annual_subsidy().lagged_subsidy()
     df=treatment_df(treatment_financials).merge_financials_and_concurrent_treatment(treatment_group_treatment).handle_parallel_projects()
-    df.fill_not_subsidized_years()
+    df.fill_not_subsidized_years().cumulative_treatment()
     df.drop(columns=["year","project_id","annual_subsidy"],inplace=True)
     df.to_excel("financials_with_treatment.xlsx")
     return df
