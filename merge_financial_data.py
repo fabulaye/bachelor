@@ -63,38 +63,17 @@ class financial_table():
         doubles_grouped=doubles.groupby("name")
         new_df=[]
         for name,group in doubles_grouped:
-        #    conscode_group=group.groupby(["conscode"])
-        #    if len(conscode_group.groups)>=2:
-        #        if "LF" in conscode_group.groups.keys() or "LIMITED_FIN._DATA" in conscode_group.groups.keys():
-        #        
-
             id_groups=group.groupby("bvdid")
             max_not_na=0
             selected_id=""
             for name,group in id_groups:
-                eligable_values=group[group["closdate_year"]>=2017]
+                eligable_values=group[group["closdate_year"]>=2020]
                 if eligable_values.notna().sum().sum()>max_not_na:
                     selected_id=name
                     max_not_na=eligable_values.notna().sum().sum()
             new_df.append(id_groups.get_group(selected_id))
             
             
-            #most datapoints from 2017-2023
-            #group_len=id_groups.size()
-            #group_len_filtered=group_len[group_len>=3]
-            #if len(group_len_filtered)==0:
-            #    continue
-            #if len(group_len_filtered)==1:
-            #    filtered_id=pd.Series(group_len_filtered.index)[0]
-            #    new_df.append(group[group["bvdid"]==filtered_id])
-            #    continue
-            #else:
-            #    for id in group_len_filtered.index()
-#
-            #    max_observations=group_len_filtered.max()
-            #    id=group_len_filtered[group_len_filtered==max_observations]
-            #    new_df.append(group[group["bvdid"]==id.index[0]])
-            #    continue
         new_df=pd.concat(new_df)
         new_df=pd.concat([new_df,not_double])
         

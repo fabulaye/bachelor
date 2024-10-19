@@ -141,7 +141,7 @@ class workflow():
         return self
     def drop_imputed_cols(self,run=True):
         if run:
-            data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed.xlsx")
+            data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_ratios.xlsx")
             def nmse_threshold(treshhold):
                 chdir_data()
                 errors=pd.read_excel("miss_forest_errors.xlsx",index_col=False)
@@ -162,16 +162,25 @@ class workflow():
         return self
     def treatment_ratios(self,run=True):
         if run:
-            data=pd.read_excel(r"C:\Users\Lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_dropped.xlsx")
+            data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed.xlsx")
             data_grouped=data.groupby("bvdid")
             new_df=[]
             for name,group in data_grouped:
-                divisor=group["toas"][group["concurrent_treatment"]==1][0]
-                group["cum_treatment_toas_ratio"]=group["cum_treatment"]/divisor
-                new_df.append(group)
+                if all(group["treatment"]==0):
+                    group["cum_treatment_toas_ratio"]=0
+                    group["total_annual_subsidy_toas_ratio"]=0
+                    group["subsidy_toas_ratio"]=0
+                    new_df.append(group)
+                else:
+                    indexes=group["conc_treatment"]==1
+                    divisor=group.loc[indexes,:]["toas"]
+                    divisor=divisor.iloc[0]
+                    group["cum_treatment_toas_ratio"]=group["cum_treatment"]/divisor
+                    group["total_annual_subsidy_toas_ratio"]=group["total_annual_subsidy"]/divisor
+                    group["subsidy_toas_ratio"]=group["subsidy"]/divisor
+                    new_df.append(group)
             new_df=pd.concat(new_df)
-            self.__init__(new_df)
-            new_df.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_dropped_ratios.xlsx")
+            new_df.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_ratios.xlsx")
         return self
     def balance_sheet_items(self):
         data=None
@@ -190,5 +199,5 @@ class workflow():
 
 
 bachelor_workflow=workflow()
-bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(True).treatment_ratios(True).drop_imputed_cols(True).match(False)
+bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(False).treatment_ratios(False).drop_imputed_cols(False).match(True)
 

@@ -9,20 +9,7 @@ def add_name_to_df(financial_df):
     financial_df=financial_df.merge(ids,on="bvdid",how="left")
     return financial_df
 
-def resolve_duplicate_ids(df):
-    new_df=[]
-    grouped_df=df.groupby(["name","closdate_year"])
 
-    for name,group in grouped_df:
-        if len(group)>=2:
-            indexer=conscode_aggregation(group["conscode"])
-            reduced_group=group[group["conscode"].isin(indexer)]
-            reduced_group=reduced_group.apply(fill_series)
-            new_df.append(reduced_group)
-        if len(group)<=1:
-            new_df.append(group)
-    new_df=pd.concat(new_df)
-    return new_df
 
 def add_my_id_to_financial(df):
     new_grouped=df.groupby("name")
@@ -41,20 +28,6 @@ def filter_12_months(df):
     six_months_df=df[df["months"]==6]
     return twelve_months_df
 
-def conscode_aggregation(series:pd.Series):
-    #als erstes lf checken, wenn lf dann weiter loopen und est returnen wenn zweter conscode returned wird
-    indexer=[]
-    conscode_hierachie=["LF","LIMITED_FIN._DATA","U2","U1","UNCONSOLIDATED_DATA","C2","C1","CONSOLIDATED_DATA"]
-    unconsolidated_conscodes=["C2","C1","CONSOLIDATED_DATA"]
-    for conscode in conscode_hierachie:
-        if conscode=="LF" or conscode=="LIMITED_FIN._DATA":
-            if conscode in list(series):
-                indexer.append(conscode)
-        if conscode in list(series):
-            indexer.append(conscode)
-            return indexer
-    print("no conscode found")
-        
 def drop_companies_with_few_entries(df):
     year_range=range(2017,2025)
     new_df_data=[]
@@ -96,11 +69,10 @@ def clean_workflow(df):
     df=filter_12_months(df)
     if "name" not in df.columns:
         df=add_name_to_df(df)
-    #df=resolve_duplicate_ids(df)
-    #df=add_my_id_to_financial(df)
+    #df=resolve_duplicate_ids(df) löschen? ist jetzt method von merge financail
     new_df=drop_companies_with_few_entries(df)
     new_df=mydf(new_df)
     bachelor_exemptions=["cf","cuas","culi","ebit","ebitda","empl","enva","fias","ifas","ltdb","ncas","ncli","ocas","ocli","ofas","oncl","shfd","tfas","toas","tshf"]
-    new_df_dropped,dropped_cols=new_df.drop_nan_columns(0.8,return_dropped_colname=True,exemptions=bachelor_exemptions)
+    #new_df_dropped,dropped_cols=new_df.drop_nan_columns(0.8,return_dropped_colname=True,exemptions=bachelor_exemptions)
     #new_df=drop_observations_by_na(new_df_dropped,0.7)
-    return new_df_dropped
+    return new_df
