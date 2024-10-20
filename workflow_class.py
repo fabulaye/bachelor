@@ -16,6 +16,7 @@ from matching_wrapper import matching_wrapper
 from processing.my_df import drop_nan_columns
 from clean_merged import clean_workflow
 from objects_and_builders.balance_sheet import balance_sheet
+from sklearn.preprocessing import StandardScaler
 
 
 class workflow():
@@ -182,6 +183,22 @@ class workflow():
             new_df=pd.concat(new_df)
             new_df.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_ratios.xlsx")
         return self
+    def shfd_rescale(self,run=True):
+        if run:
+            data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_ratios.xlsx")
+            data_grouped=data.groupby("bvdid")
+            new_col=[]
+            scaler=StandardScaler()
+            for name,group in data_grouped:
+                values=group["shfd"]
+                values=values.to_numpy().reshape(-1,1)
+                #rescaled_values=values.div(values.iloc[0])
+                rescaled_values=scaler.fit_transform(values)
+                rescaled_values = rescaled_values.flatten()
+                new_col.extend(rescaled_values)
+            data["shfd_rescaled"]=new_col
+            data.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_ratios.xlsx")
+        return self
     def balance_sheet_items(self):
         data=None
         for index,observation in data.iterrows():
@@ -199,5 +216,5 @@ class workflow():
 
 
 bachelor_workflow=workflow()
-bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(False).treatment_ratios(False).drop_imputed_cols(False).match(True) 
+bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(False).treatment_ratios(False).shfd_rescale(True).drop_imputed_cols(True).match(True) 
 

@@ -24,6 +24,7 @@ m.out1 <- matchit(reverse_treatment ~   ltdb + ifas +age+startup+empl+STATUS+clo
                   method = "nearest", distance = "glm",caliper=0.4, group = "bvdid",ratio = 3)
 
 summary(m.out1, un = FALSE)
+print(m.out1$discarded)
 
 matched_data=match.data(m.out1)
 #matched_data_complete=cbind(matched_data,data[,concat_vars])
