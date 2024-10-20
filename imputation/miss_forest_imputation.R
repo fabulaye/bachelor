@@ -32,7 +32,7 @@ col_na_percent=colSums(is.na.data.frame(df_input))/nrow(df_input)
 df_input=df_input[col_na_percent<1]
 col_na_percent=colSums(is.na.data.frame(df_input))/nrow(df_input)
 
-dont_impute=names(col_na_percent[col_na_percent>=0.8])
+dont_impute=names(col_na_percent[col_na_percent>=0.5])
 
 pred_matrix=create_predictor_matrix(df_input)
 pred_matrix[dont_impute,]=0
@@ -45,7 +45,6 @@ errors_reduced=mf_model_reduced$OOB_err
 #to_be_dropped=errors_reduced["variable"][errors_reduced["iteration"]==n_iterations & errors_reduced["NMSE"]>=0.6]
 
 errors_reduced=errors_reduced[order(errors_reduced[,"NMSE"],decreasing=TRUE),]
-
 
 imputed_reduced=mf_model_reduced$ximp
 imputed_reduced=imputed_reduced[!colnames(imputed_reduced) %in% dont_impute]
