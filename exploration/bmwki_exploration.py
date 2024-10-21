@@ -1,4 +1,4 @@
-from processing.my_df import mydf
+from processing.my_df import mydf,drop_unnamed_columns
 from datahandling.change_directory import chdir_data
 import pandas as pd
 from processing.format_numbers import german_to_us_numbers
@@ -10,6 +10,7 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
+import matplotlib.patches as mpatches
 
 chdir_data()
 bmwki_df=pd.read_csv("bmwi_request.csv")
@@ -27,6 +28,13 @@ bmwki_df.build_statistics("bmwki",bmwki_dtype_map)
 #print(bmwki_df.statistics)
 #bmwki_df.statistics.create_kde_figs()
 #bmwki_df.statistics.create_hist_figs()
+
+pre_imputed_data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control.xlsx")
+pre_imputed_data=drop_unnamed_columns(pre_imputed_data)
+pre_imputed_data.drop(columns=["end_year","name_x","treatment","total_annual_subsidy","conc_treatment","number_projects","subsidy_expectation"],inplace=True,errors="ignore")
+
+pre_imputed_to_impute=pre_imputed_data.loc[:,pre_imputed_data.isna().sum()<=(len(pre_imputed_data)/2)]
+pre_imputed_to_impute=pre_imputed_to_impute.iloc[:,:-7]
 
 end=bmwki_df.statistics.numeric_and_datetime["subsidy_end"]
 start=bmwki_df.statistics.numeric_and_datetime["subsidy_start"]
@@ -60,6 +68,7 @@ def mutliple_hist_fig(data_1,data_2):
         
         plt.title(f'Subsidy Start and Enddate Distribution', fontsize=14)
         plt.grid(True, which='both',linestyle='--', linewidth=0.3)
+        
         plt.xlabel("Date", fontsize=12)
         plt.ylabel("Density", fontsize=12)
         plt.legend(loc='lower left')
@@ -78,10 +87,35 @@ def kde_plot(data):
     plt.savefig(f"kde_subsidy.png")
     plt.close()
 
-os.chdir(r"C:\Users\lukas\Desktop\bachelor\data\figures\kde\bmwki")
-#mutliple_hist_fig(start,end)
-kde_plot(subsidy)
+def plot_missingness_heatmap(df):
+    # Create a boolean DataFrame where True indicates missing values
+    missing = df.isnull()
+    
+    # Set up the figure and axes
+    plt.figure(figsize=(10, 6))
+    
+    # Create a heatmap with seaborn
+    sns.heatmap(missing, cmap="coolwarm", cbar=False)
+    plt.xticks(rotation=45, ha='right')
+    # Add titles and labels
+    plt.title("Missing Data used Covariates Heatmap",fontsize=14)
+    plt.xlabel("Columns",fontsize=12)
+    plt.ylabel("Rows",fontsize=12)
+    plt.tight_layout()
+    plt.legend(loc='lower left')
+    plt.subplots_adjust(left=0.1, right=0.9, bottom=0.3)
+    missing_patch = mpatches.Patch(color=sns.color_palette("coolwarm", 5)[4], label='Missing',alpha=alpha)
+    not_missing_patch = mpatches.Patch(color=sns.color_palette("coolwarm", 5)[0], label='Not Missing',alpha=alpha)
+    
+    # Add the legend to the plot
+    plt.legend(handles=[missing_patch, not_missing_patch], loc='upper right', bbox_to_anchor=(1.1, 1))
+    plt.savefig(f"missingness_dataset_used.png")
+    plt.show()
 
+os.chdir(r"E:\bachelor_figures\exoloration")
+#mutliple_hist_fig(start,end)
+#kde_plot(subsidy)
+plot_missingness_heatmap(pre_imputed_to_impute)
 
 treted_names_reduced=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed.xlsx")["name"].drop_duplicates().to_list()
 
@@ -162,9 +196,9 @@ def create_hist_comparison(values,dataset_names,var_name,dtype,log=False):
 def create_violin_plot(data,y_var):
     plt.figure(figsize=(10, 6))
     #sns.violinplot(series)
-    sns.violinplot(data=data, y=y_var)
+    sns.violinplot(data=data, x="compcat", y=y_var, hue="treatment")
     plt.show()
 
-
+create_violin_plot()
 
 #create_violin_plot(bmwki_df,"subsidy")

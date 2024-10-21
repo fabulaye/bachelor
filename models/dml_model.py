@@ -37,7 +37,7 @@ class bachelor_model():
         chdir_data()
         input_data=pd.read_excel(r"matched_data.xlsx")
         input_data=drop_unnamed_columns(input_data)
-        input_data.drop(columns=["annual_subsidy","total_subsidy","country","ctryiso","filing type","audit status","original units","original currency","estimated operating revenue","estimated employees","accounting practice","closdate","conscode","historic_statusdate","account.unit","exchange.rate.from.local.currency.to.usd_ama","name","text.format.of.closing.date..created.from.closdate..","name_x","Name","Rechtsform","age.1","tshf","shareholder.funds..capital","distance","reverse_treatment","other.shareholders.funds","subclass","...1"],inplace=True,errors="ignore")
+        input_data.drop(columns=["annual_subsidy","total_subsidy","country","ctryiso","filing type","audit status","original units","original currency","estimated operating revenue","estimated employees","accounting practice","closdate","conscode","historic_statusdate","account.unit","exchange.rate.from.local.currency.to.usd_ama","name","text.format.of.closing.date..created.from.closdate..","name_x","Name","Rechtsform","age.1","tshf","shareholder.funds..capital","distance","reverse_treatment","other.shareholders.funds","subclass","...1","name_underscore","last_release"],inplace=True,errors="ignore")
 
         input_data["compcat"]=input_data["compcat"].replace({"MEDIUM_SIZED":"MEDIUM"})
         input_mydf=mydf(input_data)
@@ -46,8 +46,8 @@ class bachelor_model():
         input_mydf["bvdid"],bvdid_factor_map=input_mydf.factorize_series(input_mydf["bvdid"])
 
         #categorical_variables=["compcat","rechtsform","bvdid"]
-        to_scale_variables=["cash","cuas","culi","current.assets..debtors","current.assets..stocks","fias","ifas","ltdb","ncas","ncli","ocas","ofas","oncl","provisions","tfas","toas","working.capital"]
-        treatment_variables=["treatment","subsidy","subsidy_duration_day","one_year_lag_total_annual_subsidy","total_annual_subsidy","integrated_dummy","conc_treatment","cum_treatment","cum_treatment_toas_ratio","subsidy_expectation_sum","subsidy_expectation_sum_toas_ratio","total_annual_subsidy_toas_ratio","treatment_weight"]
+        to_scale_variables=["cash","cuas","culi","current.assets..debtors","current.assets..stocks","fias","ifas","ltdb","ncas","ncli","ocas","ofas","oncl","provisions","tfas","toas"]
+        treatment_variables=["treatment","subsidy_duration_day","one_year_lag_total_annual_subsidy","total_annual_subsidy","integrated_dummy","conc_treatment","cum_treatment","cum_treatment_toas_ratio","subsidy_expectation_sum","subsidy_expectation_sum_toas_ratio","total_annual_subsidy_toas_ratio","treatment_weight"]
         
         dependent_variables=["shfd","shfd_rescaled","weights"]
         #control_variables=["total_annual_subsidy"]
@@ -293,20 +293,20 @@ def create_signal_model():
 
 
 signal_model=create_signal_model()
-#signal_model.full_shap_workflow(r"E:\bachelor_figures\shap_signal_model")
+signal_model.full_shap_workflow(r"E:\bachelor_figures\shap_signal_model")
 #signal_model.ate_workflow()
 #signal_model.const_marginal_ate_workflow()
 #signal_model.hte_workflow()
 #signal_model.single_tree_int()
 #signal_model.single_tree_policy_int()
-signal_model.validation()
+#signal_model.validation()
 
 
 def create_financial_model():
     financial_treatment=["subsidy_expectation_sum","subsidy_expectation_sum_toas_ratio","conc_treatment"]
     
     featurizer = PolynomialFeatures(degree=2,interaction_only=True,include_bias=False)
-    financial_model=bachelor_model(CausalForestDML(random_state=1444),"finance_model_shfd",financial_treatment)
+    financial_model=bachelor_model(CausalForestDML(random_state=1444),"finance_model",financial_treatment)
     cmd=fit_or_load(financial_model.name)
     if cmd=="fit":
         financial_model.fit(financial_treatment)
@@ -320,7 +320,7 @@ def create_financial_model():
     
 
 financial_model=create_financial_model()
-#financial_model.full_shap_workflow(r"E:\bachelor_figures\shap_financial_model")
+financial_model.full_shap_workflow(r"E:\bachelor_figures\shap_financial_model")
 #financial_model.ate_workflow()
 
 
@@ -352,7 +352,7 @@ def create_direct_model():
     return direct_model
     
 direct_model=create_direct_model()
-#direct_model.full_shap_workflow(r"E:\bachelor_figures\shap_direct_model")
+direct_model.full_shap_workflow(r"E:\bachelor_figures\shap_direct_model")
 #direct_model.ate_workflow()
 
 
