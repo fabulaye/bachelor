@@ -225,7 +225,7 @@ def treatment_group_treatment_workflow():
     df=treatment_df(treatment_financials).merge_financials_and_concurrent_treatment(treatment_group_treatment).handle_parallel_projects()
     df=df.fill_not_subsidized_years().cumulative_treatment().concurrent_treatment().remove_subsidy_expectations()
     df["number_projects"].fillna(0,inplace=True)
-    df.drop(columns=["year","project_id","annual_subsidy","name_y","Gemeindekennziffer","Stadt/Gemeinde","Ort","Bundesland","Thema","subsidy_start","subsidy_end","subsidy","start_year","end_year","treatment_years","project_ids"],inplace=True)
+    df.drop(columns=["year","project_id","annual_subsidy","name_y","Gemeindekennziffer","Stadt/Gemeinde","Ort","Bundesland","Thema","subsidy_start","subsidy_end","subsidy","start_year","treatment_years","project_ids"],inplace=True)
 
     #df_outer=treatment_df(treatment_financials).merge_financials_and_concurrent_treatment(treatment_group_treatment,how="outer").handle_parallel_projects()
     #df_outer=df_outer.fill_not_subsidized_years().cumulative_treatment().concurrent_treatment()

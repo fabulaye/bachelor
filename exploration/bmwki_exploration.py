@@ -7,6 +7,9 @@ from datetime import datetime
 from processing.format_string import format_df
 from datahandling.change_directory import chdir_root_search
 import os
+import numpy as np
+from matplotlib import pyplot as plt
+import seaborn as sns
 
 chdir_data()
 bmwki_df=pd.read_csv("bmwi_request.csv")
@@ -25,13 +28,66 @@ bmwki_df.build_statistics("bmwki",bmwki_dtype_map)
 #bmwki_df.statistics.create_kde_figs()
 #bmwki_df.statistics.create_hist_figs()
 
+end=bmwki_df.statistics.numeric_and_datetime["subsidy_end"]
+start=bmwki_df.statistics.numeric_and_datetime["subsidy_start"]
+subsidy=bmwki_df.statistics.numeric_and_datetime["subsidy"]
+
+#bmwki_df.statistics.create_hist_fig(end,"End Date","End Date",hist_object=cum_hist)
+palette=sns.color_palette("coolwarm")
+sns.set_palette(palette=palette)
+alpha=0.8
+def hist_fig(values):
+        #values=np.log(values)
+        bins=sturges_rule(values)
+        plt.plot(label='Hist', color='blue',bins=bins)
+        #range as a quantile maybe
+        plt.hist(values,cumulative=False,density=False)
+        plt.title(f'Subsidy Start and Enddate')
+        plt.grid(True, which='both',linestyle='--', linewidth=0.3)
+        plt.xlabel("Date", fontsize=12)
+        plt.ylabel("Count", fontsize=12)
+        plt.savefig(f"start_and_enddate.png")
+        plt.close()
+
+def mutliple_hist_fig(data_1,data_2):
+        #values=np.log(values)
+        bins=sturges_rule(data_1)
+        sns.set_palette(palette=palette)
+        plt.plot(label='Hist',bins=bins)
+        plt.hist(data_1, bins=bins, alpha=alpha, label='Start Date',color=palette[0],cumulative=True,density=True)  # Add label for legend
+        plt.hist(data_2, bins=bins, alpha=alpha, label='End Date',cumulative=True,color=palette[5],density=True) 
+        #range as a quantile maybe
+        
+        plt.title(f'Subsidy Start and Enddate Distribution', fontsize=14)
+        plt.grid(True, which='both',linestyle='--', linewidth=0.3)
+        plt.xlabel("Date", fontsize=12)
+        plt.ylabel("Density", fontsize=12)
+        plt.legend(loc='lower left')
+        plt.savefig(f"start_and_enddate.png")
+        plt.close()
+
+def sturges_rule(data):
+    n = len(data)
+    return int(np.ceil(np.log2(n) + 1))
+
+def kde_plot(data):
+    sns.kdeplot(data, bw_method='scott',fill=True,log_scale=False,alpha=alpha)
+    plt.xlabel('Subsidy in €', fontsize=12)
+    plt.ylabel('Density', fontsize=12)
+    plt.title('Kernel Density Estimate Subsidy\n(Gaussian Kernel, Scott Bandwidth)', fontsize=14)
+    plt.savefig(f"kde_subsidy.png")
+    plt.close()
+
+os.chdir(r"C:\Users\lukas\Desktop\bachelor\data\figures\kde\bmwki")
+#mutliple_hist_fig(start,end)
+kde_plot(subsidy)
 
 
 treted_names_reduced=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed.xlsx")["name"].drop_duplicates().to_list()
 
-bmwki_df_reduced=bmwki_df[bmwki_df["name"].isin(treted_names_reduced)]
-bmwki_df_reduced=mydf(bmwki_df_reduced)
-bmwki_df_reduced.build_statistics("bmwki_reduced",bmwki_dtype_map)
+#bmwki_df_reduced=bmwki_df[bmwki_df["name"].isin(treted_names_reduced)]
+#bmwki_df_reduced=mydf(bmwki_df_reduced)
+#bmwki_df_reduced.build_statistics("bmwki_reduced",bmwki_dtype_map)
 #bmwki_df_reduced["subsidy_start"]=bmwki_df_reduced["subsidy_start"].apply(get_year)
 #bmwki_df_reduced["subsidy_end"]=bmwki_df_reduced["subsidy_end"].apply(get_year)
 #print(bmwki_df.statistics.numeric_and_datetime)
@@ -47,8 +103,8 @@ import pandas as pd
 
 bmwki_description=bmwki_df["subsidy"].describe()
 print(bmwki_description)
-bmwki_reduced_description=bmwki_df_reduced["subsidy"].describe()
-print(bmwki_reduced_description)
+#bmwki_reduced_description=bmwki_df_reduced["subsidy"].describe()
+#print(bmwki_reduced_description)
 
 
 
@@ -102,15 +158,13 @@ def create_hist_comparison(values,dataset_names,var_name,dtype,log=False):
 #subsidy=(np.log(bmwki_df["subsidy"]),np.log(bmwki_df_reduced["subsidy"]))
 #create_hist_comparison(subsidy,("bmwki","bmwki_reduced"),"Subsidy","num")
 
+
 def create_violin_plot(data,y_var):
     plt.figure(figsize=(10, 6))
     #sns.violinplot(series)
-    sns.violinplot(data=data, x="reduced", y=y_var)
+    sns.violinplot(data=data, y=y_var)
     plt.show()
 
 
-bmwki_df["reduced"]=[0]*len(bmwki_df)
-bmwki_df_reduced["reduced"]=[1]*len(bmwki_df_reduced)
-reduced_and_not_reduced=pd.concat([bmwki_df_reduced,bmwki_df])
 
-create_violin_plot(reduced_and_not_reduced,"subsidy")
+#create_violin_plot(bmwki_df,"subsidy")

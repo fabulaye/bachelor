@@ -17,6 +17,7 @@ from processing.my_df import drop_nan_columns
 from clean_merged import clean_workflow
 from objects_and_builders.balance_sheet import balance_sheet
 from sklearn.preprocessing import StandardScaler
+from processing.format_string import format_df
 
 
 class workflow():
@@ -127,6 +128,35 @@ class workflow():
                 return selector._df[["STATUS","bvdid","historic_statusdate"]]
             state_df=add_state_inc()
             data=data.merge(state_df,on="bvdid",how="left")
+            def add_published(data):
+                chdir_data()
+                ids=pd.read_csv(r"id\treatment_and_control_ids.csv")
+                ids.rename(columns={"name":"name_underscore"},inplace=True)
+                data=data.merge(ids,on="bvdid")
+                published_data=pd.read_csv("published_dummy.csv")
+                published_data=format_df(published_data)
+                published_data.rename(columns={"name":"name_underscore"},inplace=True)
+                new_data=pd.merge(data,published_data[["name_underscore","last_release"]],on="name_underscore",how="left")
+                new_data["last_release"]=new_data["last_release"].replace("na",0)
+                new_data["last_release"]=new_data["last_release"].replace("NA",0)
+                new_data["last_release"]=new_data["last_release"].fillna(0)
+                new_data["last_release"]=new_data["last_release"].apply(lambda x: int(x))
+                #new_data["end_year"]=new_data["end_year"].apply(lambda x: int(x))
+                published=[]
+                for name,group in new_data.groupby("bvdid"):
+                    #try:
+                    if max(group["last_release"])>min(group["end_year"]):
+                        ones=[1]*len(group)
+                        published.extend(ones)
+                    else:
+                        zeros=[0]*len(group)
+                        published.extend(zeros)
+                    #except TypeError:
+                            #zeros=[0]*len(group)
+                            #published.extend(zeros)
+                new_data["published"]=published
+                return new_data
+            data=add_published(data)
             data.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials.xlsx",index=False)
         return self
     
@@ -151,7 +181,7 @@ class workflow():
                 var_to_drop=errors["variable"][(errors["iteration"]==max(errors["iteration"])) & (errors["NMSE"]>=treshhold)]
                 return var_to_drop
             cols_to_drop=nmse_threshold(0.6).to_list()
-            exceptions=["bvdid","closdate_year","compcat","annual_subsidy","treatment","subsidy","total_subsidy","total_annual_subsidy","integrated_dummy"]
+            exceptions=["bvdid","closdate_year","compcat","annual_subsidy","treatment","subsidy","total_subsidy","total_annual_subsidy","integrated_dummy","published","STATUS","rechtsform","one_year_lag_total_annual_subsidy"]
             cols_to_drop=[col for col in cols_to_drop if col not in exceptions]
             data.drop(columns=cols_to_drop,inplace=True)
             data.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_dropped.xlsx")
@@ -173,9 +203,12 @@ class workflow():
                     group["subsidy_expectation_sum_toas_ratio"]=0
                     new_df.append(group)
                 else:
-                    indexes=group["conc_treatment"]==1
-                    divisor=group.loc[indexes,:]["toas"]
-                    divisor=divisor.iloc[0]
+                    if len(group)>1:
+                        indexes=group["conc_treatment"]==1
+                        divisor=group.loc[indexes,:]["toas"]
+                        divisor=divisor.iloc[0]
+                    elif len(group)==1:
+                        divisor=group["toas"]
                     group["cum_treatment_toas_ratio"]=group["cum_treatment"]/divisor
                     group["total_annual_subsidy_toas_ratio"]=group["total_annual_subsidy"]/divisor
                     group["subsidy_expectation_sum_toas_ratio"]=group["subsidy_expectation_sum"]/divisor
@@ -216,5 +249,5 @@ class workflow():
 
 
 bachelor_workflow=workflow()
-bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(False).treatment_ratios(False).shfd_rescale(True).drop_imputed_cols(True).match(True) 
+bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(False).treatment_ratios(False).shfd_rescale(False).drop_imputed_cols(True).match(True) 
 

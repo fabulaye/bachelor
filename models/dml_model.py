@@ -8,7 +8,7 @@ from joblib import dump,load
 from datahandling.change_directory import chdir_data
 from matplotlib import pyplot as plt
 from econml.dml import CausalForestDML
-from econml.cate_interpreter import SingleTreeCateInterpreter
+from econml.cate_interpreter import SingleTreeCateInterpreter,SingleTreePolicyInterpreter
 from processing.my_df import drop_unnamed_columns
 from matplotlib import pyplot as plt
 import shap
@@ -16,7 +16,8 @@ from sklearn.preprocessing import StandardScaler,MinMaxScaler
 from econml.panel.dml import DynamicDML
 import os
 from sklearn.preprocessing import PolynomialFeatures
-
+from econml.validate import DRtester
+from sklearn.model_selection import train_test_split
 
 #CausalForestDML().shap_values
 
@@ -29,7 +30,7 @@ from sklearn.preprocessing import PolynomialFeatures
 
 
 class bachelor_model():
-    def __init__(self,model,name,treatment_names,controls=None,scale_y=False):
+    def __init__(self,model:CausalForestDML,name,treatment_names,controls=None,scale_y=False):
         self.name=name
         self.treatment_names=treatment_names
         self.model=model
@@ -71,7 +72,8 @@ class bachelor_model():
         #self.sales=np.array(self.df["sales"])
         self.feature_matrix_cols=[col for col in self.df.columns if col not in treatment_variables and col not in control_variables and col not in dependent_variables]
         feauture_matrix=self.df[self.feature_matrix_cols]
-        
+        self.financial_df=self.df[self.feature_matrix_cols].drop(columns=["bvdid"])
+        self.financial_matrix=self.financial_df.to_numpy()
         self.treatment_df=self.df[treatment_variables]
         self.feature_matrix=np.array(self.df[self.feature_matrix_cols])
         self.control_matrix=np.array(self.df[control_variables])
@@ -187,7 +189,48 @@ class bachelor_model():
         print(f"ATE Inference: {self.ate_inference}")
         self.ate_interval=self.model.ate_interval(self.feature_matrix)
         print(f"ATE CI: {self.ate_interval}")
-
+    def const_marginal_ate_workflow(self):
+        self.const_marginal_ate=self.model.const_marginal_ate(self.feature_matrix)
+        print(f"Const. Marginal ATE: {self.const_marginal_ate}")
+        self.const_marginal_ate_inference=self.model.const_marginal_ate_inference(self.feature_matrix)
+        print(f"Const. Marginal ATE Inference: {self.const_marginal_ate_inference}")
+        self.const_marginal_ate_interval=self.model.const_marginal_ate_inference(self.feature_matrix)
+        print(f"Const. Marginal ATE CI: {self.const_marginal_ate_interval}")
+    def hte_workflow(self,base_treatment=None,target_treatment=None):
+        if base_treatment==None:
+            base_treatment=np.zeros(self.treatment_matrix.shape)
+        if target_treatment==None:
+            #target_treatment=self.treatment_df["conc_treatment"].to_list()
+            target_treatment=np.ones(self.treatment_matrix.shape)
+        self.hte=self.model.effect(T0=base_treatment,T1=target_treatment,X=self.feature_matrix)
+        print(f"HTE: {self.hte}")
+        self.hte_inference=self.model.effect_inference(T0=base_treatment,T1=target_treatment,X=self.feature_matrix)
+        print(f"HTE Inference: {self.hte_inference}")
+        self.hte_interval=self.model.effect_interval(T0=base_treatment,T1=target_treatment,X=self.feature_matrix)
+        print(f"HTE CI: {self.hte_interval}")
+    def single_tree_int(self):
+        interpretation=SingleTreeCateInterpreter(max_leaf_nodes=20)
+        cate_interpretation=interpretation.interpret(self.model,self.feature_matrix) #wtf do I do with you?
+        os.chdir(r"E:\bachelor_figures\cate")
+        cate_interpretation.render(self.name+"cate_tree_interpretation",feature_names=self.feature_names)
+        #cate_interpretation.export_graphviz("cate_tree_interpretation.gv",feature_names=self.feature_names)
+    def single_tree_policy_int(self):
+        
+        interpretation=SingleTreePolicyInterpreter()
+        cate_interpretation=interpretation.interpret(self.model,self.feature_matrix) #wtf do I do with you?
+        os.chdir(r"E:\bachelor_figures\cate")
+        cate_interpretation.render(self.name+"cate_tree_policy_interpretation",feature_names=self.feature_names)
+        #cate_interpretation.export_graphviz("cate_tree_interpretation.gv",feature_names=self.feature_names)
+    def validation(self):
+        model=self.model
+        regression=model.models_y
+        propensity=model.models_t
+        cate=model.model_cate
+        cate_fitted=cate.fit(X=self.feature_matrix,T=self.treatment_matrix,y=self.shfd)
+        tester=DRtester(model_regression=regression,model_propensity=propensity,cate=cate_fitted)
+        X_train, X_test=train_test_split(self.feature_matrix,test_size=0.3)
+        evaluation=tester.evaluate_blp(X_test,X_train)
+        print(evaluation)
 
 
         	
@@ -251,7 +294,12 @@ def create_signal_model():
 
 signal_model=create_signal_model()
 #signal_model.full_shap_workflow(r"E:\bachelor_figures\shap_signal_model")
-signal_model.ate_workflow()
+#signal_model.ate_workflow()
+#signal_model.const_marginal_ate_workflow()
+#signal_model.hte_workflow()
+#signal_model.single_tree_int()
+#signal_model.single_tree_policy_int()
+signal_model.validation()
 
 
 def create_financial_model():
@@ -273,7 +321,7 @@ def create_financial_model():
 
 financial_model=create_financial_model()
 #financial_model.full_shap_workflow(r"E:\bachelor_figures\shap_financial_model")
-financial_model.ate_workflow()
+#financial_model.ate_workflow()
 
 
 
@@ -305,17 +353,11 @@ def create_direct_model():
     
 direct_model=create_direct_model()
 #direct_model.full_shap_workflow(r"E:\bachelor_figures\shap_direct_model")
-direct_model.ate_workflow()
+#direct_model.ate_workflow()
 
 
 
-def single_tree_int():
-    interpretation=SingleTreeCateInterpreter()
-    cate_interpretation=interpretation.interpret(model,feature_matrix) #wtf do I do with you?
-    print(cate_interpretation)
-    plt.figure()
-    interpretation.plot(feature_names=feature_matrix_cols,fontsize=12)
-    plt.show()
+
 
 def startup_analysis():
     startup=input_mydf[input_mydf["startup"]==True]
