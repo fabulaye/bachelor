@@ -55,6 +55,7 @@ class bachelor_model():
             control_variables=controls
         else:
             control_variables=["compcat","age","STATUS","closdate_year","total_annual_subsidy","toas"]
+            
         self.weights=input_mydf["weights"]
         self.scaler=StandardScaler()
         input_scaled=self.scaler.fit_transform(input_mydf[to_scale_variables])
@@ -256,17 +257,6 @@ class bachelor_model():
     
         
 
-            
-
-def dynamic_model():
-    feature_matrix_dynamic_model=input_df_with_scaled[feature_matrix_cols_ex_bvdid]
-    dynamic_treatment_vars=["one_year_lag_total_annual_subsidy","total_annual_subsidy"]
-    model=DynamicDML()
-    groups=input_df_with_scaled["bvdid"]
-    model.fit(Y=shfd,X=feature_matrix_dynamic_model,W=control_matrix,T=treatment_matrix[dynamic_treatment_vars],groups=groups)
-    dump(model,"dynamic_model.jolib")
-    return model
-
 def fit_or_load(name):
     chdir_data()
     if name not in os.listdir():
@@ -280,9 +270,9 @@ featurizer = PolynomialFeatures(degree=2, interaction_only=True, include_bias=Fa
 
 def create_signal_model():
     signal_treatment=["integrated_dummy","conc_treatment","number_projects"]
-    control_variables=["compcat","age","STATUS","closdate_year","total_annual_subsidy","toas"]
+    
     featurizer = PolynomialFeatures(degree=2,interaction_only=True,include_bias=False)
-    signal_model=bachelor_model(CausalForestDML(random_state=1444),"signal_model",signal_treatment,controls=control_variables)
+    signal_model=bachelor_model(CausalForestDML(random_state=1444),"signal_model",signal_treatment)
     cmd=fit_or_load(signal_model.name)
     if cmd=="fit":
         signal_model.fit(signal_treatment)
@@ -340,9 +330,8 @@ financial_model.full_shap_workflow(r"E:\bachelor_figures\shap_financial_model")
 
 def create_direct_model():
     direct_treatment=["one_year_lag_total_annual_subsidy","total_annual_subsidy_toas_ratio","cum_treatment","cum_treatment_toas_ratio"]
-    direct_controls=["age","STATUS","closdate_year","toas"]
     featurizer = PolynomialFeatures(degree=2,interaction_only=True,include_bias=False)
-    direct_model=bachelor_model(CausalForestDML(random_state=1444),"direct_model",direct_treatment,scale_y=True,controls=direct_controls)
+    direct_model=bachelor_model(CausalForestDML(random_state=1444),"direct_model",direct_treatment,scale_y=True)
     cmd=fit_or_load(direct_model.name)
     if cmd=="fit":
         direct_model.fit(direct_treatment)
