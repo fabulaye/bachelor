@@ -200,7 +200,7 @@ class workflow():
                 if all(group["treatment"]==0):
                     group["cum_treatment_toas_ratio"]=0
                     group["total_annual_subsidy_toas_ratio"]=0
-                    group["subsidy_expectation_sum_toas_ratio"]=0
+                    group["subsidy_expectation_toas_ratio"]=0
                     new_df.append(group)
                 else:
                     if len(group)>1:
@@ -211,7 +211,7 @@ class workflow():
                         divisor=group["toas"]
                     group["cum_treatment_toas_ratio"]=group["cum_treatment"]/divisor
                     group["total_annual_subsidy_toas_ratio"]=group["total_annual_subsidy"]/divisor
-                    group["subsidy_expectation_sum_toas_ratio"]=group["subsidy_expectation_sum"]/divisor
+                    group["subsidy_expectation_toas_ratio"]=group["subsidy_expectation"]/divisor
                     new_df.append(group)
             new_df=pd.concat(new_df)
             new_df.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_ratios.xlsx")
@@ -237,7 +237,25 @@ class workflow():
         for index,observation in data.iterrows():
             balance_sheet_object=balance_sheet(observation)
             equity=balance_sheet_object.theoreticals.equity
-
+    def drop_companies_with_few_entries(self,run=True):
+        if run:
+            data=pd.read_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_dropped.xlsx")
+            year_range=range(2017,2025)
+            new_df_data=[]
+            grouped=data.groupby("bvdid")
+            dropped_companies=[]
+            for index,group in grouped:
+                year_values=group["closdate_year"]
+                if sum(year_values.isin(year_range))>=3:
+                    #recent_data=group[group["closdate_year"]>=2017]
+                    new_df_data.append(group) 
+                    #ich belohne companies die doppelte entries haben weil es so aussieht 
+                else:
+                    dropped_companies.extend(group["name"].unique())
+            data=pd.concat(new_df_data)
+            data=drop_unnamed_columns(data)
+            data.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_dropped.xlsx")
+        return self
 
     def match(self,run=True):
         if run:
@@ -249,5 +267,5 @@ class workflow():
 
 
 bachelor_workflow=workflow()
-bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(False).treatment_ratios(False).shfd_rescale(False).drop_imputed_cols(True).match(True) 
+bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(False).treatment_ratios(True).shfd_rescale(True).drop_imputed_cols(True).drop_companies_with_few_entries(True).match(True)
 

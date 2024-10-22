@@ -47,14 +47,13 @@ class bachelor_model():
 
         #categorical_variables=["compcat","rechtsform","bvdid"]
         to_scale_variables=["cash","cuas","culi","current.assets..debtors","current.assets..stocks","fias","ifas","ltdb","ncas","ncli","ocas","ofas","oncl","provisions","tfas","toas"]
-        treatment_variables=["treatment","subsidy_duration_day","one_year_lag_total_annual_subsidy","total_annual_subsidy","integrated_dummy","conc_treatment","cum_treatment","cum_treatment_toas_ratio","subsidy_expectation_sum","subsidy_expectation_sum_toas_ratio","total_annual_subsidy_toas_ratio","treatment_weight"]
+        treatment_variables=["treatment","subsidy_duration_day","one_year_lag_total_annual_subsidy","total_annual_subsidy","integrated_dummy","conc_treatment","cum_treatment","cum_treatment_toas_ratio","subsidy_expectation","subsidy_expectation_toas_ratio","total_annual_subsidy_toas_ratio","treatment_weight"]
         
         dependent_variables=["shfd","shfd_rescaled","weights"]
         #control_variables=["total_annual_subsidy"]
-        if controls!=None:
-            control_variables=controls
-        else:
-            control_variables=["compcat","age","STATUS","closdate_year","total_annual_subsidy","toas"]
+        
+        
+        control_variables=["STATUS","closdate_year","total_annual_subsidy","toas"]
             
         self.weights=input_mydf["weights"]
         self.scaler=StandardScaler()
@@ -99,6 +98,7 @@ class bachelor_model():
         chdir_data()
         self.model=load(self.name)
     def dump(self):
+        chdir_data()
         dump(self.model,self.name+".jolib")
     def shap_barplot(self,treatment_var,show=False):
         treatment_explainer=self.explainer[treatment_var]
@@ -177,13 +177,8 @@ class bachelor_model():
             #model.shap_barplot_cluster(treatment_var)
             self.shap_force_plot(treatment_var)
             os.chdir(dir_path)
-    def ate_workflow(self,base_treatment=None,target_treatment=None):
+    def ate_workflow(self,base_treatment,target_treatment):
         #self.ate=self.model.ate(X=self.feature_matrix)
-        if base_treatment==None:
-            base_treatment=np.zeros(self.treatment_matrix.shape)
-        if target_treatment==None:
-            #target_treatment=self.treatment_df["conc_treatment"].to_list()
-            target_treatment=np.ones(self.treatment_matrix.shape)
         self.ate=self.model.ate(T0=base_treatment,T1=target_treatment,X=self.feature_matrix)
         print(f"ATE: {self.ate}")
         self.ate_inference=self.model.ate_inference(T0=base_treatment,T1=target_treatment,X=self.feature_matrix)
@@ -198,11 +193,6 @@ class bachelor_model():
         self.const_marginal_ate_interval=self.model.const_marginal_ate_inference(self.feature_matrix)
         print(f"Const. Marginal ATE CI: {self.const_marginal_ate_interval}")
     def hte_workflow(self,base_treatment=None,target_treatment=None):
-        if base_treatment==None:
-            base_treatment=np.zeros(self.treatment_matrix.shape)
-        if target_treatment==None:
-            #target_treatment=self.treatment_df["conc_treatment"].to_list()
-            target_treatment=np.ones(self.treatment_matrix.shape)
         self.hte=self.model.effect(T0=base_treatment,T1=target_treatment,X=self.feature_matrix)
         print(f"HTE: {self.hte}")
         self.hte_inference=self.model.effect_inference(T0=base_treatment,T1=target_treatment,X=self.feature_matrix)
@@ -269,7 +259,7 @@ featurizer = PolynomialFeatures(degree=2, interaction_only=True, include_bias=Fa
 
 
 def create_signal_model():
-    signal_treatment=["integrated_dummy","conc_treatment","number_projects"]
+    signal_treatment=["conc_treatment"]
     
     featurizer = PolynomialFeatures(degree=2,interaction_only=True,include_bias=False)
     signal_model=bachelor_model(CausalForestDML(random_state=1444),"signal_model",signal_treatment)
@@ -284,8 +274,8 @@ def create_signal_model():
 
 signal_model=create_signal_model()
 signal_model.full_shap_workflow(r"E:\bachelor_figures\shap_signal_model")
-#signal_model.ate_workflow()
-#signal_model.const_marginal_ate_workflow()
+signal_model.ate_workflow(base_treatment=np.zeros(signal_model.treatment_matrix.shape),target_treatment=np.ones(signal_model.treatment_matrix.shape))
+##signal_model.const_marginal_ate_workflow()
 #signal_model.hte_workflow()
 #signal_model.single_tree_int()
 #signal_model.single_tree_policy_int()
@@ -293,7 +283,7 @@ signal_model.full_shap_workflow(r"E:\bachelor_figures\shap_signal_model")
 
 
 def create_financial_model():
-    financial_treatment=["subsidy_expectation_sum","subsidy_expectation_sum_toas_ratio","conc_treatment"]
+    financial_treatment=["subsidy_expectation_toas_ratio"]
     
     featurizer = PolynomialFeatures(degree=2,interaction_only=True,include_bias=False)
     financial_model=bachelor_model(CausalForestDML(random_state=1444),"finance_model",financial_treatment)
@@ -311,10 +301,8 @@ def create_financial_model():
 
 financial_model=create_financial_model()
 financial_model.full_shap_workflow(r"E:\bachelor_figures\shap_financial_model")
-#financial_model.ate_workflow()
-
-
-
+financial_model.ate_workflow(base_treatment=np.zeros(financial_model.treatment_matrix.shape),target_treatment=np.full(financial_model.treatment_matrix.shape,100000))
+#financial_model.hte_workflow(base_treatment=np.zeros(financial_model.treatment_matrix.shape),target_treatment=financial_model.treatment_matrix)
 
 
 #marginal_ate=financial_model.model.marginal_ate(financial_model.treatment_df["subsidy_expectation_sum"],financial_model.feature_matrix).reshape(-1, 1)
@@ -329,7 +317,7 @@ financial_model.full_shap_workflow(r"E:\bachelor_figures\shap_financial_model")
 
 
 def create_direct_model():
-    direct_treatment=["one_year_lag_total_annual_subsidy","total_annual_subsidy_toas_ratio","cum_treatment","cum_treatment_toas_ratio"]
+    direct_treatment=["cum_treatment_toas_ratio"]
     featurizer = PolynomialFeatures(degree=2,interaction_only=True,include_bias=False)
     direct_model=bachelor_model(CausalForestDML(random_state=1444),"direct_model",direct_treatment,scale_y=True)
     cmd=fit_or_load(direct_model.name)
@@ -342,9 +330,8 @@ def create_direct_model():
     
 direct_model=create_direct_model()
 direct_model.full_shap_workflow(r"E:\bachelor_figures\shap_direct_model")
-#direct_model.ate_workflow()
-
-
+direct_model.ate_workflow(base_treatment=np.zeros(direct_model.treatment_matrix.shape),target_treatment=np.full(direct_model.treatment_matrix.shape,100000))
+#direct_model.hte_workflow(base_treatment=np.zeros(direct_model.treatment_matrix.shape),target_treatment=direct_model.treatment_matrix)
 
 
 

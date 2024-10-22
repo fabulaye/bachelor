@@ -112,7 +112,7 @@ class treatment_data_control_group(mydf):
             self[col]=0
         self["conc_treatment"]=0
         self["cum_treatment"]=0
-        self["subsidy_expectation_sum"]=0
+        self["subsidy_expectation"]=0
         self["number_projects"]=0
         return self
 
@@ -157,8 +157,8 @@ class treatment_df(mydf):
         treatment_vars.append("total_subsidy")
         to_merge_vars.append("total_subsidy")
 
-        expected_subsidy_sum=grouped_df.agg({'subsidy_expectation': 'sum'}) 
-        expected_subsidy_sum.rename(columns={'subsidy_expectation': 'subsidy_expectation_sum'}, inplace=True) 
+        #expected_subsidy_sum=grouped_df.agg({'subsidy_expectation': 'sum'}) 
+        #expected_subsidy_sum.rename(columns={'subsidy_expectation': 'subsidy_expectation_sum'}, inplace=True) 
         treatment_vars.append("total_subsidy")
         to_merge_vars.append("total_subsidy")
         
@@ -170,7 +170,7 @@ class treatment_df(mydf):
         df=self.merge(annual_subsidy_sum, on=['bvdid', 'year'], how='left')
         df=df.merge(project_ids, on=['bvdid', 'year'], how='left')
         df=df.merge(subsidy_sum, on=['bvdid', 'year'], how='left')
-        df=df.merge(expected_subsidy_sum, on=['bvdid', 'year'], how='left')
+        #df=df.merge(expected_subsidy_sum, on=['bvdid', 'year'], how='left')
         df["integrated_dummy"]=df.apply(lambda x: integrated_dummy(x),axis=1)
         treatment_vars.append("integrated_dummy")
         to_merge_vars.append("integrated_dummy")
@@ -203,8 +203,8 @@ class treatment_df(mydf):
     def remove_subsidy_expectations(self):
         groups=[]
         for name,group in self.groupby("bvdid"):
-            group["subsidy_expectation_sum"]=group["subsidy_expectation_sum"].drop_duplicates(keep="first")
-            group["subsidy_expectation_sum"].fillna(0,inplace=True)
+            group["subsidy_expectation"]=group["subsidy_expectation"].drop_duplicates(keep="first")
+            group["subsidy_expectation"].fillna(0,inplace=True)
             groups.append(group)
         new_df=pd.concat(groups)
         self.__init__(new_df)
