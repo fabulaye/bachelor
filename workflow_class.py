@@ -222,14 +222,16 @@ class workflow():
             data_grouped=data.groupby("bvdid")
             new_col=[]
             scaler=StandardScaler()
+            data["shfd_min_cum_treatment"]=data["shfd"]-data["cum_treatment"]
             for name,group in data_grouped:
-                values=group["shfd"]
+                values=group["shfd_min_cum_treatment"]
                 values=values.to_numpy().reshape(-1,1)
                 #rescaled_values=values.div(values.iloc[0])
                 rescaled_values=scaler.fit_transform(values)
                 rescaled_values = rescaled_values.flatten()
                 new_col.extend(rescaled_values)
-            data["shfd_rescaled"]=new_col
+            data["shfd_min_cum_treatment_rescaled"]=new_col
+            
             data.to_excel(r"C:\Users\lukas\Desktop\bachelor\data\financials_merge_treatment_and_control_categorials_cleaned_imputed_ratios.xlsx")
         return self
     def balance_sheet_items(self):
@@ -267,5 +269,5 @@ class workflow():
 
 
 bachelor_workflow=workflow()
-bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(False).treatment_ratios(True).shfd_rescale(True).drop_imputed_cols(True).drop_companies_with_few_entries(True).match(True)
+bachelor_workflow.treatment_control_workflow("treatment",id_request=False,merge_financials=False,treatment=False).treatment_control_workflow("control",id_request=False,merge_financials=False,treatment=False).merge_and_concat(False).categorials(False).clean(False).impute(False).treatment_ratios(False).shfd_rescale(True).drop_imputed_cols(True).drop_companies_with_few_entries(True).match(False)
 

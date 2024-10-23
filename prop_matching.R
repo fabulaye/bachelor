@@ -21,7 +21,7 @@ summary(m.out0)}
 
 
 set.seed("1871")
-m.out1 <- matchit(reverse_treatment ~   ltdb + ifas +age+startup+empl+STATUS+closdate_year, data = data,
+m.out1 <- matchit(reverse_treatment ~ toas+closdate_year, data = data,
                   method = "nearest", distance = "glm",caliper=0.4, group = "bvdid",ratio = 3)
 
 summary(m.out1, un = FALSE)
